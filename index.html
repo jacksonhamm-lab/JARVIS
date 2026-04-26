@@ -1,0 +1,2630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>JARVIS</title>
+<style>
+/* ============================================================
+   JARVIS — design tokens
+   ============================================================ */
+:root{
+  --bg:#0a0a0f;
+  --bg-2:#0e0e16;
+  --surface:#13131c;
+  --surface-2:#181824;
+  --elev:#1c1c2a;
+  --line:rgba(0,212,255,0.12);
+  --line-2:rgba(255,255,255,0.06);
+  --arc:#00d4ff;
+  --arc-glow:rgba(0,212,255,0.45);
+  --arc-dim:rgba(0,212,255,0.18);
+  --gold:#c5a047;
+  --gold-glow:rgba(197,160,71,0.45);
+  --friday:#ff8093;
+  --tars:#ffaa55;
+  --thalia:#b08cff;
+  --jarvis:#00d4ff;
+  --good:#4ade80;
+  --warn:#fbbf24;
+  --bad:#ef4444;
+  --text:rgba(255,255,255,0.92);
+  --muted:rgba(255,255,255,0.55);
+  --dim:rgba(255,255,255,0.32);
+  --faint:rgba(255,255,255,0.14);
+  --mono:ui-monospace,"JetBrains Mono","Cascadia Code","Fira Code",Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden}
+body{min-height:100vh;min-height:100dvh;font-size:14px;line-height:1.5;letter-spacing:0.005em}
+a{color:inherit;text-decoration:none}
+button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit;background:transparent;border:0;outline:0}
+::selection{background:rgba(0,212,255,0.35);color:#fff}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.35)}
+
+/* ============================================================
+   Background ambient grid
+   ============================================================ */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,black,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,black,transparent 100%);
+}
+.bg-vignette{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 50%,transparent 0%,rgba(0,0,0,0.55) 100%);
+}
+
+/* ============================================================
+   Boot screen — matches the JARVIS.html mockup boot exactly
+   ============================================================ */
+#boot{
+  position:fixed;inset:0;z-index:100;
+  background:radial-gradient(ellipse at center,#080810 0%,#030306 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;cursor:default;
+}
+#boot.ready{cursor:pointer}
+#boot.gone{pointer-events:none;animation:bootSweepUp 700ms cubic-bezier(0.7,0,1,1) forwards}
+@keyframes bootSweepUp{
+  0%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-40px);visibility:hidden}
+}
+
+/* Scanlines (subtle horizontal lines) */
+#boot-scanlines{
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.05) 3px,rgba(0,0,0,0.05) 4px);
+}
+
+/* Horizontal scan sweep — cyan line moves top→bottom forever */
+#boot-sweep{
+  position:absolute;left:0;right:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,0.35),transparent);
+  animation:bootScan 4s linear infinite;
+}
+@keyframes bootScan{
+  0%{top:0}
+  100%{top:100%}
+}
+
+/* Background grid (very faint) */
+#boot-grid{
+  position:absolute;inset:0;pointer-events:none;opacity:0.04;
+  background-image:
+    linear-gradient(rgba(0,212,255,1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,1) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+/* Corner decorations — 24x24 L-shapes, 20px inset */
+#boot-corners span{position:absolute;width:24px;height:24px;border:0 solid rgba(0,212,255,0.25)}
+#boot-corners span:nth-child(1){top:20px;left:20px;border-top-width:1.5px;border-left-width:1.5px}
+#boot-corners span:nth-child(2){top:20px;right:20px;border-top-width:1.5px;border-right-width:1.5px}
+#boot-corners span:nth-child(3){bottom:20px;left:20px;border-bottom-width:1.5px;border-left-width:1.5px}
+#boot-corners span:nth-child(4){bottom:20px;right:20px;border-bottom-width:1.5px;border-right-width:1.5px}
+
+/* Logo mark — centered J inside a circle, with surrounding ring + tick marks */
+#boot-logo{
+  position:relative;width:72px;height:72px;margin-bottom:48px;
+  opacity:0;animation:bootFadeUp 800ms ease forwards;
+}
+#boot-logo .ring-svg{
+  position:absolute;top:-14px;left:-14px;width:100px;height:100px;overflow:visible;
+}
+#boot-logo .center-mark{
+  width:72px;height:72px;border-radius:50%;
+  border:1px solid rgba(0,212,255,0.22);
+  background:radial-gradient(circle,rgba(0,212,255,0.12) 0%,transparent 70%);
+  box-shadow:0 0 30px rgba(0,212,255,0.15),inset 0 0 20px rgba(0,212,255,0.05);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
+}
+#boot-logo .center-mark .j{
+  font-family:var(--sans);font-weight:700;font-size:36px;line-height:1;
+  color:var(--arc);letter-spacing:-0.02em;
+  text-shadow:0 0 20px rgba(0,212,255,0.9),0 0 40px rgba(0,212,255,0.4);
+}
+
+/* Wordmark JARVIS */
+#boot-wordmark{
+  font-family:var(--sans);font-weight:700;font-size:22px;line-height:1;
+  letter-spacing:0.4em;color:rgba(255,255,255,0.9);
+  margin-bottom:4px;
+  text-shadow:0 0 30px rgba(255,255,255,0.15);
+  opacity:0;animation:bootFadeUp 900ms 0.1s ease forwards;
+  text-indent:0.4em; /* compensate trailing letter-spacing for visual centering */
+}
+/* Subtitle */
+#boot-subtitle{
+  font-family:var(--mono);font-weight:400;font-size:10px;line-height:1;
+  letter-spacing:0.25em;color:rgba(255,255,255,0.2);
+  margin-bottom:48px;
+  opacity:0;animation:bootFadeUp 1000ms 0.2s ease forwards;
+}
+
+/* Boot text log lines */
+#boot-log{
+  display:flex;flex-direction:column;gap:7px;
+  min-height:140px;width:380px;
+  font-family:var(--mono);font-size:11px;line-height:1;letter-spacing:0.08em;
+}
+#boot-log .ln{
+  display:flex;align-items:center;gap:10px;
+  color:rgba(255,255,255,0.28);
+  opacity:0;transform:translateY(4px);
+  transition:opacity .35s,transform .35s;
+}
+#boot-log .ln.in{opacity:1;transform:translateY(0)}
+#boot-log .ln .arrow{color:rgba(0,212,255,0.3)}
+#boot-log .ln.active{color:rgba(0,212,255,0.7)}
+#boot-log .ln.active.green{color:var(--good)}
+#boot-log .ln .cur{display:inline-block;color:var(--arc);animation:bootBlink 0.8s steps(2,jump-none) infinite}
+@keyframes bootBlink{50%{opacity:0}}
+
+/* Authorization prompt — pulsing dot + label */
+#boot-prompt{
+  margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:14px;
+  opacity:0;
+}
+#boot-prompt.show{animation:bootFadeUp 400ms ease forwards}
+#boot-prompt .pulser{position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center}
+#boot-prompt .pulser .ring{
+  position:absolute;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(0,212,255,0.4);
+  animation:bootPRing 2s ease-out infinite;
+}
+#boot-prompt .pulser .ring.delay{animation-delay:0.8s}
+#boot-prompt .pulser .dot{
+  width:20px;height:20px;border-radius:50%;background:var(--arc);
+  box-shadow:0 0 16px var(--arc),0 0 32px rgba(0,212,255,0.4);
+  z-index:1;
+}
+@keyframes bootPRing{
+  0%{transform:scale(0.6);opacity:0.9}
+  100%{transform:scale(1.6);opacity:0}
+}
+#boot-prompt .label{
+  font-family:var(--sans);font-weight:600;font-size:11px;line-height:1;
+  letter-spacing:0.28em;color:rgba(0,212,255,0.6);text-transform:uppercase;
+}
+
+/* Version footer */
+#boot-version{
+  position:absolute;bottom:24px;right:28px;
+  font-family:var(--mono);font-weight:400;font-size:9px;line-height:1;
+  letter-spacing:0.12em;color:rgba(255,255,255,0.1);
+}
+
+@keyframes bootFadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ============================================================
+   App layout
+   ============================================================ */
+#app{position:relative;z-index:1;min-height:100vh;min-height:100dvh;display:flex;opacity:0;transition:opacity .5s ease}
+#app.ready{opacity:1}
+
+/* Sidebar */
+#sidebar{
+  width:84px;flex-shrink:0;
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;
+  padding:18px 0;gap:6px;position:sticky;top:0;height:100vh;height:100dvh;
+}
+#sidebar .logo{
+  width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,0.35),transparent 70%);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:var(--arc);font-size:22px;
+  text-shadow:0 0 14px var(--arc-glow);
+  margin-bottom:18px;letter-spacing:-0.02em;
+  border:1px solid var(--arc-dim);
+  animation:logoBreathe 3.6s ease-in-out infinite;
+}
+@keyframes logoBreathe{
+  0%,100%{box-shadow:0 0 14px rgba(0,212,255,0.25);border-color:rgba(0,212,255,0.18)}
+  50%{box-shadow:0 0 26px rgba(0,212,255,0.55);border-color:rgba(0,212,255,0.4)}
+}
+#sidebar nav{display:flex;flex-direction:column;gap:4px;flex:1;align-items:center;width:100%}
+.nav-btn{
+  width:60px;padding:12px 0;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:9px;letter-spacing:0.18em;
+  color:var(--muted);border-radius:6px;
+  position:relative;transition:color .2s,background .2s;
+  text-transform:uppercase;
+}
+.nav-btn:hover{color:var(--text);background:rgba(0,212,255,0.06)}
+.nav-btn.active{color:var(--arc)}
+.nav-btn.active::before{
+  content:"";position:absolute;left:-8px;top:50%;transform:translateY(-50%);
+  width:3px;height:24px;background:var(--arc);border-radius:0 2px 2px 0;
+  box-shadow:0 0 10px var(--arc-glow);
+}
+.nav-btn .ic{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+}
+.nav-btn .ic svg{width:22px;height:22px}
+#sidebar .footer{display:flex;flex-direction:column;gap:6px;align-items:center;padding-bottom:6px}
+.icon-btn{
+  width:38px;height:38px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--dim);transition:color .2s,background .2s;
+}
+.icon-btn:hover{color:var(--arc);background:rgba(0,212,255,0.08)}
+.icon-btn svg{width:18px;height:18px}
+
+/* Main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+/* Topbar */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(10,10,15,0.95),rgba(10,10,15,0.7));
+  backdrop-filter:blur(8px);position:sticky;top:0;z-index:10;
+}
+#topbar .left,#topbar .right{display:flex;align-items:center;gap:18px}
+.clock{
+  font-family:var(--mono);font-size:18px;color:var(--text);
+  letter-spacing:0.06em;
+}
+.clock .colon{animation:blink 1s steps(2,jump-none) infinite}
+@keyframes blink{50%{opacity:0.3}}
+.date{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.18em;text-transform:uppercase}
+.weather{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.06em;display:flex;align-items:center;gap:8px}
+.weather .ic{width:14px;height:14px;color:var(--arc)}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.2em;
+  color:var(--muted);text-transform:uppercase;
+  padding:5px 10px;border:1px solid var(--line);border-radius:2px;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 8px currentColor;color:var(--good);animation:pulseDot 2s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Panels */
+.panel{padding:32px;flex:1;animation:panelEnter .55s cubic-bezier(.2,.7,.2,1)}
+.panel[hidden]{display:none}
+@keyframes panelEnter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section heading */
+.sec-head{
+  display:flex;align-items:center;gap:14px;margin-bottom:18px;
+}
+.sec-head h2{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.32em;
+  color:var(--muted);text-transform:uppercase;font-weight:500;
+}
+.sec-head .line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.sec-head .meta{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.18em;text-transform:uppercase}
+
+/* HOME */
+#panel-home .greeting{
+  font-size:clamp(28px,4.4vw,52px);
+  font-weight:200;letter-spacing:-0.02em;color:var(--text);
+  line-height:1.1;margin-bottom:6px;
+  background:linear-gradient(90deg,#fff 0%,#fff 30%,rgba(0,212,255,0.9) 50%,#fff 70%,#fff 100%);
+  background-size:300% 100%;background-clip:text;-webkit-background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+  animation:sweep 6s linear infinite;
+}
+@keyframes sweep{0%{background-position:200% 0}100%{background-position:-100% 0}}
+#panel-home .submeta{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.22em;text-transform:uppercase;margin-bottom:24px}
+.briefing{
+  background:linear-gradient(180deg,var(--surface),var(--surface-2));
+  border:1px solid var(--line);border-radius:8px;
+  padding:22px 26px;margin-bottom:28px;position:relative;overflow:hidden;
+}
+.briefing::before{
+  content:"";position:absolute;top:0;left:0;width:3px;height:100%;
+  background:linear-gradient(180deg,var(--arc),transparent);
+}
+.briefing .label{font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:var(--arc);text-transform:uppercase;margin-bottom:10px;opacity:0.85}
+.briefing .text{font-size:16px;color:var(--text);line-height:1.6;font-weight:300;min-height:1.6em}
+.briefing .cursor{display:inline-block;width:8px;height:18px;background:var(--arc);vertical-align:text-bottom;margin-left:2px;animation:blink 0.9s steps(2,jump-none) infinite;box-shadow:0 0 8px var(--arc-glow)}
+.briefing .cursor.gone{display:none}
+
+.focus-row{
+  display:flex;align-items:center;gap:14px;margin-bottom:28px;
+  padding:14px 18px;background:var(--surface);border:1px dashed var(--line);border-radius:6px;
+}
+.focus-row .label{font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;flex-shrink:0}
+.focus-row input{flex:1;font-size:14px;color:var(--text);background:transparent}
+.focus-row input::placeholder{color:var(--dim)}
+
+/* Job alerts (HOME) */
+.alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.alert{
+  display:flex;align-items:center;gap:14px;padding:12px 16px;
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  font-size:13px;
+}
+.alert .badge{
+  font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;
+  padding:4px 8px;border-radius:2px;
+}
+.alert.match .badge{background:rgba(74,222,128,0.15);color:var(--good);border:1px solid rgba(74,222,128,0.4)}
+.alert.closing .badge{background:rgba(251,191,36,0.15);color:var(--warn);border:1px solid rgba(251,191,36,0.4)}
+.alert .title{flex:1;color:var(--text)}
+.alert .company{color:var(--muted);font-size:12px}
+.alert a{color:var(--arc);font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase}
+
+/* Character cards */
+.char-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+.char-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:18px;position:relative;overflow:hidden;cursor:pointer;
+  transition:transform .25s,border-color .25s;
+}
+.char-card:hover{transform:translateY(-2px);border-color:var(--arc-dim)}
+.char-card::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--c,var(--arc)),transparent);
+  opacity:0.6;
+}
+.char-card .head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.char-card .av{
+  width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,var(--c,var(--arc)) 0%,transparent 70%);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--c,var(--arc));font-weight:700;font-size:13px;letter-spacing:0;
+  border:1px solid currentColor;
+  animation:breathe 4s ease-in-out infinite;
+  text-shadow:0 0 10px currentColor;
+}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 12px rgba(255,255,255,0.05)}
+  50%{box-shadow:0 0 24px var(--c-glow,var(--arc-glow))}
+}
+.char-card .name{font-weight:600;font-size:13px;color:var(--text);letter-spacing:0.04em}
+.char-card .role{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--dim);text-transform:uppercase}
+.char-card .status{font-size:13px;color:var(--muted);line-height:1.5;min-height:3.2em}
+.char-card .ts{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.18em;text-transform:uppercase;margin-top:10px}
+.char-card.jarvis{--c:var(--jarvis);--c-glow:rgba(0,212,255,0.4)}
+.char-card.friday{--c:var(--friday);--c-glow:rgba(255,128,147,0.4)}
+.char-card.tars{--c:var(--tars);--c-glow:rgba(255,170,85,0.4)}
+.char-card.thalia{--c:var(--thalia);--c-glow:rgba(176,140,255,0.4)}
+
+/* Quick launchers */
+.launcher-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.launcher{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:18px;display:flex;flex-direction:column;gap:6px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+  cursor:pointer;text-align:left;
+}
+.launcher:hover{transform:translateY(-2px);border-color:var(--arc-dim);box-shadow:0 0 20px rgba(0,212,255,0.1)}
+.launcher .ic{width:24px;height:24px;color:var(--arc);margin-bottom:4px}
+.launcher .ttl{font-size:13px;font-weight:600;color:var(--text)}
+.launcher .sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase}
+
+/* ============================================================
+   Character panels common
+   ============================================================ */
+.char-header{
+  display:flex;align-items:center;gap:18px;margin-bottom:24px;
+  padding-bottom:18px;border-bottom:1px solid var(--line);
+}
+.char-header .av{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 50% 50%,var(--c,var(--arc)) 0%,transparent 70%);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--c,var(--arc));font-weight:700;font-size:22px;
+  border:1.5px solid currentColor;
+  animation:breathe 4s ease-in-out infinite;
+  text-shadow:0 0 14px currentColor;
+}
+.char-header .info{flex:1;min-width:0}
+.char-header h1{font-size:24px;font-weight:300;letter-spacing:-0.01em;color:var(--text);margin-bottom:4px}
+.char-header .role{font-family:var(--mono);font-size:10px;letter-spacing:0.32em;color:var(--c,var(--arc));text-transform:uppercase;opacity:0.9}
+.char-header .actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  padding:8px 14px;font-family:var(--mono);font-size:10px;letter-spacing:0.22em;
+  text-transform:uppercase;border:1px solid var(--line);border-radius:2px;
+  color:var(--text);background:rgba(255,255,255,0.02);
+  transition:background .2s,border-color .2s,box-shadow .2s,transform .1s;
+}
+.btn:hover{background:rgba(0,212,255,0.08);border-color:var(--arc-dim);box-shadow:0 0 16px rgba(0,212,255,0.18)}
+.btn:active{transform:scale(.97)}
+.btn.primary{color:var(--arc);border-color:var(--arc-dim)}
+.btn.gold{color:var(--gold);border-color:rgba(197,160,71,0.3)}
+.btn.gold:hover{background:rgba(197,160,71,0.08);box-shadow:0 0 16px var(--gold-glow)}
+
+#panel-friday .char-header .av,#panel-friday .briefing::before{--c:var(--friday)}
+#panel-friday .char-header .av{color:var(--friday)}
+#panel-friday .char-header .role{color:var(--friday)}
+#panel-friday .briefing::before{background:linear-gradient(180deg,var(--friday),transparent)}
+#panel-friday .briefing .label{color:var(--friday)}
+#panel-friday .briefing .cursor{background:var(--friday);box-shadow:0 0 8px rgba(255,128,147,0.5)}
+
+#panel-tars .char-header .av{color:var(--tars)}
+#panel-tars .char-header .role{color:var(--tars)}
+#panel-tars .briefing::before{background:linear-gradient(180deg,var(--tars),transparent)}
+#panel-tars .briefing .label{color:var(--tars)}
+#panel-tars .briefing .cursor{background:var(--tars);box-shadow:0 0 8px rgba(255,170,85,0.5)}
+
+#panel-thalia .char-header .av{color:var(--thalia)}
+#panel-thalia .char-header .role{color:var(--thalia)}
+#panel-thalia .briefing::before{background:linear-gradient(180deg,var(--thalia),transparent)}
+#panel-thalia .briefing .label{color:var(--thalia)}
+#panel-thalia .briefing .cursor{background:var(--thalia);box-shadow:0 0 8px rgba(176,140,255,0.5)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  padding:10px 14px;font-family:var(--mono);font-size:10px;letter-spacing:0.22em;
+  color:var(--muted);text-transform:uppercase;border-bottom:2px solid transparent;
+  transition:color .2s,border-color .2s;flex-shrink:0;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--arc)}
+#panel-friday .tab.active{border-bottom-color:var(--friday)}
+#panel-tars .tab.active{border-bottom-color:var(--tars)}
+#panel-thalia .tab.active{border-bottom-color:var(--thalia)}
+
+.tabpanel[hidden]{display:none}
+
+/* FRIDAY — tasks */
+.task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.task{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  transition:border-color .15s,background .15s;
+}
+.task:hover{border-color:var(--arc-dim)}
+.task .check{
+  width:18px;height:18px;flex-shrink:0;border-radius:4px;
+  border:1.5px solid var(--muted);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:border-color .2s,background .2s;
+}
+.task .check:hover{border-color:var(--arc)}
+.task.done .check{background:var(--arc);border-color:var(--arc);box-shadow:0 0 12px var(--arc-glow);animation:checkFlash .5s}
+@keyframes checkFlash{0%{transform:scale(.7)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
+.task .check svg{width:12px;height:12px;color:#000;display:none}
+.task.done .check svg{display:block}
+.task .txt{flex:1;font-size:13px;color:var(--text)}
+.task.done .txt{color:var(--dim);text-decoration:line-through}
+.task .pri{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;padding:3px 7px;border-radius:2px}
+.task .pri.high{color:var(--bad);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3)}
+.task .pri.med{color:var(--warn);background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3)}
+.task .pri.low{color:var(--muted);background:rgba(255,255,255,0.04);border:1px solid var(--line)}
+.task .del{color:var(--dim);font-size:18px;line-height:1;padding:0 4px;transition:color .15s}
+.task .del:hover{color:var(--bad)}
+.task-add{
+  display:flex;gap:8px;padding:12px 14px;
+  background:var(--surface-2);border:1px dashed var(--line);border-radius:6px;
+}
+.task-add input{flex:1;font-size:13px;color:var(--text)}
+.task-add input::placeholder{color:var(--dim)}
+.task-add select{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--muted);background:rgba(255,255,255,0.04);padding:6px 8px;border-radius:4px;
+}
+.task-add select option{background:var(--surface);color:var(--text)}
+
+/* FRIDAY — jobs */
+.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.job{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:16px;display:flex;flex-direction:column;gap:8px;position:relative;
+  transition:border-color .2s,transform .2s;
+}
+.job:hover{border-color:var(--arc-dim);transform:translateY(-2px)}
+.job .top{display:flex;align-items:flex-start;gap:10px}
+.job .fit{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;
+  border:1.5px solid currentColor;
+}
+.job .fit.f5{color:var(--good);background:rgba(74,222,128,0.1);box-shadow:0 0 12px rgba(74,222,128,0.3)}
+.job .fit.f4{color:#60a5fa;background:rgba(96,165,250,0.1);box-shadow:0 0 12px rgba(96,165,250,0.3)}
+.job .fit.f3{color:var(--warn);background:rgba(251,191,36,0.1)}
+.job .fit.f2{color:#fb923c;background:rgba(251,146,60,0.08)}
+.job .fit.f1{color:var(--bad);background:rgba(239,68,68,0.06)}
+.job .meta{flex:1;min-width:0}
+.job .title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.job .company{font-size:12px;color:var(--muted)}
+.job .new{
+  position:absolute;top:10px;right:10px;
+  font-family:var(--mono);font-size:8px;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--good);padding:3px 7px;border:1px solid rgba(74,222,128,0.4);border-radius:2px;
+  background:rgba(74,222,128,0.1);
+}
+.job .tags{display:flex;flex-wrap:wrap;gap:6px}
+.job .tag{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);padding:3px 6px;border:1px solid var(--line);border-radius:2px}
+.job .why{font-size:12px;color:var(--muted);line-height:1.5}
+.job .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--dim);margin-top:auto;padding-top:6px;border-top:1px solid var(--line-2)}
+.job .row a{color:var(--arc);font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase}
+
+/* FRIDAY — news */
+.news-list{display:flex;flex-direction:column;gap:8px}
+.news{
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .2s;
+}
+.news:hover{border-color:var(--arc-dim)}
+.news .top{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.news .src{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--arc);text-transform:uppercase;padding:2px 6px;border:1px solid var(--arc-dim);border-radius:2px}
+.news .ts{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.16em;text-transform:uppercase}
+.news h3{font-size:14px;font-weight:600;color:var(--text);line-height:1.4}
+.news .sum{font-size:12px;color:var(--muted);line-height:1.5}
+.news a{color:var(--arc);font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase}
+
+/* Empty states */
+.empty{
+  padding:32px 18px;text-align:center;color:var(--dim);font-size:13px;
+  background:var(--surface);border:1px dashed var(--line);border-radius:6px;
+}
+.empty .ico{font-size:24px;margin-bottom:10px;opacity:0.4}
+
+/* Applications */
+.apps-table{width:100%;border-collapse:collapse;font-size:13px}
+.apps-table th{
+  text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:0.22em;
+  color:var(--muted);text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:500;
+}
+.apps-table td{padding:12px;border-bottom:1px solid var(--line-2);color:var(--text)}
+.apps-table tr:hover td{background:rgba(0,212,255,0.03)}
+.app-status{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;padding:3px 7px;border-radius:2px}
+.app-status.applied{color:#60a5fa;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3)}
+.app-status.interview{color:var(--warn);background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3)}
+.app-status.offer{color:var(--good);background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3)}
+.app-status.rejected{color:var(--bad);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3)}
+.app-status.hold{color:var(--muted);background:rgba(255,255,255,0.04);border:1px solid var(--line)}
+
+/* Briefings */
+.brief-list{display:flex;flex-direction:column;gap:10px}
+.brief-item{padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.brief-item .ts{font-family:var(--mono);font-size:10px;color:var(--friday);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:6px}
+.brief-item .body{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap}
+
+/* Resources */
+.res-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.res-item{padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;gap:10px}
+.res-item .nm{flex:1;font-size:13px;color:var(--text)}
+.res-item .url{font-family:var(--mono);font-size:10px;color:var(--arc);letter-spacing:0.16em;text-transform:uppercase}
+
+/* TARS */
+.tars-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;position:relative;overflow:hidden}
+.stat-card .label{font-family:var(--mono);font-size:9px;letter-spacing:0.28em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.stat-card .val{font-size:32px;font-weight:300;color:var(--text);letter-spacing:-0.02em}
+.stat-card .sub{font-family:var(--mono);font-size:10px;color:var(--tars);letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}
+.stat-card.streak{border-color:rgba(255,170,85,0.25)}
+.stat-card.streak::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--tars),transparent);opacity:0.6}
+.session-log{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.session-log select,.session-log input{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:8px 12px;color:var(--text);text-transform:uppercase;
+}
+.session-log select option{background:var(--surface);color:var(--text)}
+
+.workout-frame{
+  width:100%;height:80vh;min-height:600px;
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;
+  background:var(--surface);position:relative;
+}
+.workout-frame iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+.workout-frame .tools{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2}
+
+/* THALIA — TJ Dashboard */
+.tj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.tj-grid.full{grid-column:1/-1}
+.tj-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:18px;position:relative;overflow:hidden;
+}
+.tj-card.span2{grid-column:span 2}
+.tj-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.5}
+.tj-card h3{font-family:var(--mono);font-size:11px;letter-spacing:0.28em;color:var(--gold);text-transform:uppercase;margin-bottom:14px;font-weight:500}
+.tj-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line-2)}
+.tj-row:last-child{border-bottom:0}
+.tj-label{font-size:12px;color:var(--muted)}
+.tj-val{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:500}
+.tj-val.gold{color:var(--gold)}
+.tj-val.good{color:var(--good)}
+.tj-val.bad{color:var(--bad)}
+.tj-val.warn{color:var(--warn)}
+.tj-input{
+  font-family:var(--mono);font-size:13px;color:var(--text);
+  background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:4px;
+  border:1px solid transparent;width:120px;text-align:right;
+  transition:border-color .15s,background .15s;
+}
+.tj-input:hover,.tj-input:focus{border-color:var(--gold);background:rgba(197,160,71,0.06)}
+.tj-input.full{width:100%;text-align:left}
+.tj-input.date{width:140px}
+.tj-bar{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;margin-top:10px;position:relative}
+.tj-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),rgba(197,160,71,0.7));transition:width .3s;border-radius:4px;box-shadow:0 0 10px var(--gold-glow)}
+.tj-bar-fill.over{background:linear-gradient(90deg,var(--bad),#ff6b6b)}
+.tj-pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;padding:3px 8px;border-radius:2px}
+.tj-pill.under{color:var(--good);background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3)}
+.tj-pill.over{color:var(--bad);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3)}
+.tj-pill.on{color:var(--gold);background:rgba(197,160,71,0.12);border:1px solid rgba(197,160,71,0.3)}
+
+.tj-camp-list{display:flex;flex-direction:column;gap:6px}
+.tj-camp{display:grid;grid-template-columns:1fr 90px 100px 30px;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:4px}
+.tj-camp input,.tj-camp select{font-family:var(--mono);font-size:11px;color:var(--text);padding:4px 6px}
+.tj-camp .x{color:var(--dim);cursor:pointer;font-size:16px;text-align:center}
+.tj-camp .x:hover{color:var(--bad)}
+.tj-add{margin-top:6px}
+
+.tj-comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tj-comp{padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--line-2);border-radius:4px}
+.tj-comp .nm{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;margin-bottom:6px}
+.tj-comp textarea{font-size:12px;color:var(--text);width:100%;min-height:50px;resize:vertical;line-height:1.4;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:3px;border:1px solid transparent}
+.tj-comp textarea:focus{border-color:var(--gold);background:rgba(197,160,71,0.05)}
+
+.tj-hours-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.tj-hour-day{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;background:rgba(255,255,255,0.02);border-radius:4px}
+.tj-hour-day .d{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase}
+.tj-hour-day input{width:100%;text-align:center;font-family:var(--mono);font-size:13px;color:var(--text);padding:4px 0}
+
+.tj-cost-list{display:flex;flex-direction:column;gap:4px}
+.tj-cost{display:grid;grid-template-columns:1fr 100px 100px 30px;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:4px}
+.tj-cost input{font-family:var(--mono);font-size:11px;color:var(--text);padding:4px 6px}
+
+/* SETTINGS */
+.set-grid{display:grid;gap:18px;max-width:780px}
+.set-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px}
+.set-card h3{font-family:var(--mono);font-size:11px;letter-spacing:0.28em;color:var(--arc);text-transform:uppercase;margin-bottom:14px;font-weight:500}
+.set-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.set-row:last-child{margin-bottom:0}
+.set-row label{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase}
+.set-row input{
+  font-size:13px;color:var(--text);font-family:var(--mono);
+  padding:10px 12px;background:rgba(255,255,255,0.03);
+  border:1px solid var(--line);border-radius:4px;
+}
+.set-row input:focus{border-color:var(--arc-dim);background:rgba(0,212,255,0.04)}
+.set-row .hint{font-size:11px;color:var(--dim);font-family:var(--mono);letter-spacing:0.06em}
+.set-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Push update modal */
+.modal{
+  position:fixed;inset:0;z-index:50;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+.modal[hidden]{display:none}
+.modal-box{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:24px;width:min(440px,100%);position:relative;
+  box-shadow:0 24px 60px rgba(0,0,0,0.6),0 0 40px rgba(0,212,255,0.08);
+}
+.modal-box h3{font-size:18px;font-weight:300;letter-spacing:-0.01em;margin-bottom:6px;color:var(--text)}
+.modal-box .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--muted);text-transform:uppercase;margin-bottom:18px}
+.modal-box textarea{
+  width:100%;min-height:90px;resize:vertical;
+  font-size:13px;color:var(--text);line-height:1.5;
+  padding:12px;background:rgba(255,255,255,0.03);
+  border:1px solid var(--line);border-radius:6px;
+  font-family:var(--sans);
+}
+.modal-box textarea:focus{border-color:var(--arc-dim)}
+.modal-box .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+
+/* Loading scan-line */
+.scan{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit}
+.scan::after{
+  content:"";position:absolute;top:-50%;left:0;width:100%;height:50%;
+  background:linear-gradient(180deg,transparent,rgba(0,212,255,0.15),transparent);
+  animation:scanSweep 1.6s linear infinite;
+}
+@keyframes scanSweep{0%{transform:translateY(0)}100%{transform:translateY(400%)}}
+
+/* ============================================================
+   Screensaver
+   ============================================================ */
+#screensaver{
+  position:fixed;inset:0;z-index:80;
+  background:radial-gradient(circle at 50% 50%,#0d0d18 0%,#04040a 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+  cursor:pointer;
+}
+#screensaver[hidden]{display:none}
+#screensaver .arc{width:380px;height:380px;position:relative}
+#screensaver .arc svg{width:100%;height:100%}
+#screensaver .arc .r-spin{animation:ringSpin 30s linear infinite;transform-origin:50% 50%}
+#screensaver .arc .r-spin-2{animation:ringSpin 22s linear infinite reverse;transform-origin:50% 50%}
+#screensaver .arc .r-spin-3{animation:ringSpin 60s linear infinite;transform-origin:50% 50%}
+#screensaver .ss-clock{
+  font-family:var(--mono);font-size:clamp(56px,12vw,128px);font-weight:200;
+  color:var(--text);letter-spacing:0.04em;
+  text-shadow:0 0 30px rgba(0,212,255,0.4);
+  z-index:2;
+}
+#screensaver .ss-date{
+  font-family:var(--mono);font-size:14px;letter-spacing:0.36em;color:var(--muted);text-transform:uppercase;
+  z-index:2;margin-top:-8px;
+}
+#screensaver .ss-foot{
+  position:absolute;bottom:36px;left:0;right:0;text-align:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.4em;color:var(--dim);text-transform:uppercase;
+  animation:dimPulse 3s ease-in-out infinite;
+}
+#screensaver .arc-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+@keyframes dimPulse{0%,100%{opacity:0.5}50%{opacity:0.85}}
+
+#screensaver.reinit .arc-wrap{animation:reinitGlow .9s ease-out forwards}
+@keyframes reinitGlow{
+  0%{filter:drop-shadow(0 0 0 transparent);opacity:1}
+  50%{filter:drop-shadow(0 0 50px rgba(0,212,255,0.6));opacity:1;transform:scale(1.1)}
+  100%{opacity:0;transform:scale(1.3)}
+}
+
+/* Bottom nav (mobile) */
+#bottomnav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:20;
+  background:rgba(10,10,15,0.97);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  justify-content:space-around;
+}
+#bottomnav .nav-btn{flex:1;width:auto;padding:6px 0}
+
+/* ============================================================
+   Mobile responsive
+   ============================================================ */
+@media (max-width:768px){
+  #sidebar{display:none}
+  #bottomnav{display:flex}
+  main{padding-bottom:72px}
+  .panel{padding:18px 16px}
+  #topbar{padding:10px 16px}
+  .clock{font-size:15px}
+  .date{display:none}
+  .weather{font-size:10px}
+  .char-grid{grid-template-columns:repeat(2,1fr)}
+  .tars-grid{grid-template-columns:1fr 1fr}
+  .tj-card.span2{grid-column:span 1}
+  .char-header{flex-wrap:wrap}
+  .char-header .actions{width:100%;margin-top:8px}
+  #panel-home .greeting{font-size:32px}
+  /* Accordion behavior on mobile for character panels */
+  .accord{cursor:pointer}
+  .accord-body[hidden]{display:none}
+  .accord-head{display:flex;justify-content:space-between;align-items:center}
+  .accord-head::after{content:"▾";font-size:11px;color:var(--muted);transition:transform .2s}
+  .accord.open .accord-head::after{transform:rotate(180deg)}
+  /* Touch targets */
+  .btn,.nav-btn,.task .check,.icon-btn{min-height:44px}
+  .tabs{margin:0 -16px 18px;padding:0 16px}
+}
+
+@media (max-width:480px){
+  .char-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .tars-grid{grid-template-columns:1fr}
+  .briefing{padding:16px 18px}
+  .briefing .text{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<!-- ============================================================
+     BOOT SCREEN — exact match to JARVIS.html mockup
+     ============================================================ -->
+<div id="boot">
+  <div id="boot-grid"></div>
+  <div id="boot-scanlines"></div>
+  <div id="boot-sweep"></div>
+  <div id="boot-corners"><span></span><span></span><span></span><span></span></div>
+
+  <div id="boot-logo">
+    <svg class="ring-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="bglow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Background circle r=44 -->
+      <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(0,212,255,0.08)" stroke-width="1.5"/>
+      <!-- Inner ring r=34 -->
+      <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
+      <!-- Tick marks at every 30° -->
+      <g stroke="rgba(0,212,255,0.3)" stroke-width="1">
+        <line x1="94" y1="50" x2="90" y2="50"/>
+        <line x1="88.11" y1="72" x2="84.64" y2="70"/>
+        <line x1="72" y1="88.11" x2="70" y2="84.64"/>
+        <line x1="50" y1="94" x2="50" y2="90"/>
+        <line x1="28" y1="88.11" x2="30" y2="84.64"/>
+        <line x1="11.89" y1="72" x2="15.36" y2="70"/>
+        <line x1="6" y1="50" x2="10" y2="50"/>
+        <line x1="11.89" y1="28" x2="15.36" y2="30"/>
+        <line x1="28" y1="11.89" x2="30" y2="15.36"/>
+        <line x1="50" y1="6" x2="50" y2="10"/>
+        <line x1="72" y1="11.89" x2="70" y2="15.36"/>
+        <line x1="88.11" y1="28" x2="84.64" y2="30"/>
+      </g>
+      <!-- Progress arc r=44 (animated 0→100% via stroke-dashoffset on JS) -->
+      <circle id="boot-progress" cx="50" cy="50" r="44" fill="none"
+              stroke="rgba(0,212,255,0.55)" stroke-width="1.5" stroke-linecap="round"
+              stroke-dasharray="276.46" stroke-dashoffset="276.46"
+              transform="rotate(-90 50 50)"
+              filter="url(#bglow)"/>
+    </svg>
+    <div class="center-mark"><span class="j">J</span></div>
+  </div>
+
+  <div id="boot-wordmark">JARVIS</div>
+  <div id="boot-subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+
+  <div id="boot-log">
+    <div class="ln" data-text="INITIALIZING SYSTEMS..."></div>
+    <div class="ln" data-text="LOADING USER PROFILE: JACKSON"></div>
+    <div class="ln" data-text="ESTABLISHING SECURE CONNECTION..."></div>
+    <div class="ln" data-text="CALIBRATING SUBSYSTEMS..."></div>
+    <div class="ln" data-text="ALL SYSTEMS NOMINAL" data-green="1"></div>
+    <div class="ln" data-text="AWAITING AUTHORIZATION."></div>
+  </div>
+
+  <div id="boot-prompt">
+    <div class="pulser">
+      <div class="ring"></div>
+      <div class="ring delay"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="label">Press any key to initialize</div>
+  </div>
+
+  <div id="boot-version">v4.1.0 — JACKSON</div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="app" hidden>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="logo" title="JARVIS">J</div>
+    <nav>
+      <button class="nav-btn active" data-panel="home" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 12 4l9 8M5 10v10h14V10"/></svg></span>
+        Home
+      </button>
+      <button class="nav-btn" data-panel="friday" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 10h6M9 14h6"/></svg></span>
+        Friday
+      </button>
+      <button class="nav-btn" data-panel="tars" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h2l2-6 4 12 2-6h2"/></svg></span>
+        Tars
+      </button>
+      <button class="nav-btn" data-panel="thalia" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5l8 7 8-7v14"/></svg></span>
+        Thalia
+      </button>
+      <button class="nav-btn" data-panel="settings" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4.8a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.4a7 7 0 0 0-2 1.2l-2.4-.8-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.5 2.4-.8a7 7 0 0 0 2 1.2L10 21h4l.5-2.4a7 7 0 0 0 2-1.2l2.4.8 2-3.5-2-1.5c.1-.4.1-.8.1-1.2Z"/></svg></span>
+        Set
+      </button>
+    </nav>
+    <div class="footer">
+      <button class="icon-btn" id="lock-btn" title="Lock (Esc)" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main>
+    <header id="topbar">
+      <div class="left">
+        <div class="clock" id="clock">--<span class="colon">:</span>--</div>
+        <div class="date" id="date">—</div>
+      </div>
+      <div class="right">
+        <div class="weather" id="weather"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg></span><span id="weather-text">—</span></div>
+        <div class="status-pill"><span class="dot"></span> Systems active</div>
+      </div>
+    </header>
+
+    <!-- HOME -->
+    <section class="panel" id="panel-home">
+      <div class="greeting" id="greeting">Good evening, Jackson.</div>
+      <div class="submeta" id="greet-sub">All systems active.</div>
+
+      <div class="briefing" id="briefing">
+        <div class="label">Briefing</div>
+        <div class="text" id="briefing-text"></div>
+      </div>
+
+      <div class="focus-row">
+        <div class="label">Today's focus</div>
+        <input id="focus-input" placeholder="A single line. The thing that matters most today." maxlength="140">
+      </div>
+
+      <div class="alerts" id="home-alerts"></div>
+
+      <div class="sec-head"><h2>Operators</h2><div class="line"></div><div class="meta">Live status</div></div>
+      <div class="char-grid" id="char-grid"></div>
+
+      <div class="sec-head"><h2>Quick launchers</h2><div class="line"></div></div>
+      <div class="launcher-grid">
+        <a class="launcher" href="https://claude.ai" target="_blank" rel="noopener">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 4V8Z"/></svg></span>
+          <span class="ttl">Claude</span>
+          <span class="sub">Open in new tab →</span>
+        </a>
+        <a class="launcher" href="https://youtube.com" target="_blank" rel="noopener">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M11 9.5v5l4-2.5-4-2.5Z" fill="currentColor"/></svg></span>
+          <span class="ttl">YouTube</span>
+          <span class="sub">Native account →</span>
+        </a>
+        <a class="launcher" href="https://github.com/jacksonhamm-lab" target="_blank" rel="noopener">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5c0-1 .1-1.4-.5-2 3.3-.4 6.5-1.6 6.5-7a5.4 5.4 0 0 0-1.5-3.7 5 5 0 0 0-.1-3.7s-1.2-.4-3.9 1.4a13 13 0 0 0-7 0C5.8 1.7 4.6 2.1 4.6 2.1a5 5 0 0 0-.1 3.7A5.4 5.4 0 0 0 3 9.5c0 5.4 3.2 6.6 6.5 7-.6.6-.6 1.2-.5 2V22"/></svg></span>
+          <span class="ttl">GitHub</span>
+          <span class="sub">Source →</span>
+        </a>
+        <button class="launcher" data-go="tars" type="button">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h2l2-6 4 12 2-6h2"/></svg></span>
+          <span class="ttl">Workout</span>
+          <span class="sub">TARS protocol →</span>
+        </button>
+        <button class="launcher" data-go="thalia" type="button">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13h4v8H3zM10 7h4v14h-4zM17 4h4v17h-4z"/></svg></span>
+          <span class="ttl">TJ Dashboard</span>
+          <span class="sub">Marketing ops →</span>
+        </button>
+        <button class="launcher" data-go="friday" type="button">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 10h6M9 14h6"/></svg></span>
+          <span class="ttl">Tasks &amp; Jobs</span>
+          <span class="sub">Friday queue →</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- FRIDAY -->
+    <section class="panel" id="panel-friday" hidden>
+      <div class="char-header">
+        <div class="av">F</div>
+        <div class="info">
+          <h1>Friday</h1>
+          <div class="role">Operations · Tasks · Job Feed</div>
+        </div>
+        <div class="actions">
+          <button class="btn" data-push="friday" type="button">Push update</button>
+          <a class="btn primary" href="https://claude.ai" target="_blank" rel="noopener">Open Claude →</a>
+        </div>
+      </div>
+
+      <div class="briefing" id="friday-briefing">
+        <div class="label">Friday</div>
+        <div class="text" id="friday-briefing-text"></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="tasks" type="button">Tasks</button>
+        <button class="tab" data-tab="jobs" type="button">Jobs</button>
+        <button class="tab" data-tab="news" type="button">News</button>
+        <button class="tab" data-tab="apps" type="button">Applications</button>
+        <button class="tab" data-tab="briefs" type="button">Briefings</button>
+        <button class="tab" data-tab="resources" type="button">Resources</button>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="tasks">
+        <div class="task-list" id="task-list"></div>
+        <div class="task-add">
+          <input id="task-input" placeholder="New task..." maxlength="160">
+          <select id="task-pri">
+            <option value="low">Low</option>
+            <option value="med" selected>Med</option>
+            <option value="high">High</option>
+          </select>
+          <button class="btn primary" id="task-add-btn" type="button">Add</button>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="jobs" hidden>
+        <div id="jobs-status" style="margin-bottom:12px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.16em;text-transform:uppercase"></div>
+        <div class="job-grid" id="job-grid"></div>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="news" hidden>
+        <div id="news-status" style="margin-bottom:12px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.16em;text-transform:uppercase"></div>
+        <div class="news-list" id="news-list"></div>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="apps" hidden>
+        <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn primary" id="app-add-btn" type="button">+ Add application</button>
+        </div>
+        <table class="apps-table">
+          <thead><tr><th>Role</th><th>Company</th><th>Applied</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="apps-body"></tbody>
+        </table>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="briefs" hidden>
+        <div style="margin-bottom:14px"><button class="btn primary" id="brief-add-btn" type="button">+ New briefing</button></div>
+        <div class="brief-list" id="brief-list"></div>
+      </div>
+
+      <div class="tabpanel" data-tabpanel="resources" hidden>
+        <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="res-name" placeholder="Resource name" style="font-size:13px;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:4px;color:var(--text);min-width:160px">
+          <input id="res-url" placeholder="https://..." style="font-size:13px;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:4px;color:var(--text);min-width:240px;flex:1">
+          <button class="btn primary" id="res-add-btn" type="button">Add</button>
+        </div>
+        <div class="res-list" id="res-list"></div>
+      </div>
+    </section>
+
+    <!-- TARS -->
+    <section class="panel" id="panel-tars" hidden>
+      <div class="char-header">
+        <div class="av">T</div>
+        <div class="info">
+          <h1>TARS</h1>
+          <div class="role">Training · Discipline · Streak</div>
+        </div>
+        <div class="actions">
+          <button class="btn" data-push="tars" type="button">Push update</button>
+          <a class="btn primary" href="https://claude.ai" target="_blank" rel="noopener">Open Claude →</a>
+        </div>
+      </div>
+
+      <div class="briefing" id="tars-briefing">
+        <div class="label">TARS</div>
+        <div class="text" id="tars-briefing-text"></div>
+      </div>
+
+      <div class="tars-grid">
+        <div class="stat-card streak">
+          <div class="label">Streak</div>
+          <div class="val" id="tars-streak">0</div>
+          <div class="sub">consecutive sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Today</div>
+          <div class="val" id="tars-today">—</div>
+          <div class="sub" id="tars-today-sub">no session logged</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Last logged</div>
+          <div class="val" id="tars-last">—</div>
+          <div class="sub" id="tars-last-sub">—</div>
+        </div>
+      </div>
+
+      <div class="sec-head"><h2>Log session</h2><div class="line"></div></div>
+      <div class="session-log" style="margin-bottom:24px">
+        <select id="session-type">
+          <option value="">— Select —</option>
+          <option value="Push">Push day</option>
+          <option value="Pull">Pull day</option>
+          <option value="Legs">Legs</option>
+          <option value="Conditioning">Conditioning</option>
+          <option value="Mobility">Mobility</option>
+          <option value="Rest">Rest day</option>
+        </select>
+        <button class="btn primary" id="log-session-btn" type="button">Log today</button>
+        <button class="btn" id="reset-streak-btn" type="button">Reset streak</button>
+      </div>
+
+      <div class="sec-head"><h2>Program</h2><div class="line"></div><div class="meta" id="workout-status">Live</div></div>
+      <div class="workout-frame" id="workout-frame">
+        <div class="tools">
+          <button class="btn" id="workout-reload" type="button">Reload</button>
+          <button class="btn" id="workout-fullscreen" type="button">Fullscreen</button>
+          <a class="btn primary" id="workout-open" href="#" target="_blank" rel="noopener">Open ↗</a>
+        </div>
+        <iframe id="workout-iframe" referrerpolicy="no-referrer" loading="lazy" allow="fullscreen"></iframe>
+      </div>
+    </section>
+
+    <!-- THALIA -->
+    <section class="panel" id="panel-thalia" hidden>
+      <div class="char-header">
+        <div class="av">θ</div>
+        <div class="info">
+          <h1>Thalia</h1>
+          <div class="role">Strategy · Brand · Thomas Jeffery</div>
+        </div>
+        <div class="actions">
+          <button class="btn" data-push="thalia" type="button">Push update</button>
+          <a class="btn primary" href="https://claude.ai" target="_blank" rel="noopener">Open Claude →</a>
+        </div>
+      </div>
+
+      <div class="briefing" id="thalia-briefing">
+        <div class="label">Thalia</div>
+        <div class="text" id="thalia-briefing-text"></div>
+      </div>
+
+      <div class="sec-head"><h2>Thomas Jeffery — Marketing Dashboard</h2><div class="line"></div><div class="meta">Period <span id="tj-period-meta">—</span></div></div>
+      <div class="tj-grid" id="tj-grid"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="panel" id="panel-settings" hidden>
+      <div class="sec-head"><h2>Settings</h2><div class="line"></div><div class="meta">v1.0</div></div>
+      <div class="set-grid">
+        <div class="set-card">
+          <h3>Data feeds</h3>
+          <div class="set-row">
+            <label>jobs.json URL</label>
+            <input id="set-jobs" type="url">
+            <span class="hint">Raw GitHub URL — committed by daily job search script.</span>
+          </div>
+          <div class="set-row">
+            <label>news.json URL</label>
+            <input id="set-news" type="url">
+            <span class="hint">Raw GitHub URL — daily marketing/industry news.</span>
+          </div>
+          <div class="set-row">
+            <label>updates.json URL</label>
+            <input id="set-updates" type="url">
+            <span class="hint">Raw GitHub URL — daily auto-generated character status lines.</span>
+          </div>
+          <div class="set-row">
+            <label>Workout app URL</label>
+            <input id="set-workout" type="url">
+            <span class="hint">Embedded into TARS panel as iframe.</span>
+          </div>
+          <div class="set-actions">
+            <button class="btn primary" id="set-save" type="button">Save</button>
+            <button class="btn" id="set-reset" type="button">Reset to defaults</button>
+            <button class="btn" id="set-refetch" type="button">Refetch feeds now</button>
+          </div>
+        </div>
+        <div class="set-card">
+          <h3>Local data</h3>
+          <div class="set-row"><span class="hint">Tasks, briefings, applications, push updates, streak, focus, dashboard inputs — all stored in this browser's localStorage.</span></div>
+          <div class="set-actions">
+            <button class="btn" id="set-export" type="button">Export JSON</button>
+            <button class="btn" id="set-import" type="button">Import JSON</button>
+            <button class="btn" id="set-clear-cache" type="button">Clear cached feeds</button>
+          </div>
+        </div>
+        <div class="set-card">
+          <h3>About</h3>
+          <div class="set-row">
+            <span class="hint">JARVIS — single-page PWA. No external AI, no API keys. All character speech is scripted and data-driven. Feeds populate from GitHub raw URLs committed by scheduled scripts.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav (mobile) -->
+  <nav id="bottomnav">
+    <button class="nav-btn active" data-panel="home" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 12 4l9 8M5 10v10h14V10"/></svg></span>Home</button>
+    <button class="nav-btn" data-panel="friday" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></span>Friday</button>
+    <button class="nav-btn" data-panel="tars" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h2l2-6 4 12 2-6h2"/></svg></span>Tars</button>
+    <button class="nav-btn" data-panel="thalia" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5l8 7 8-7v14"/></svg></span>Thalia</button>
+    <button class="nav-btn" data-panel="settings" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/></svg></span>Set</button>
+  </nav>
+</div>
+
+<!-- ============================================================
+     SCREENSAVER
+     ============================================================ -->
+<div id="screensaver" hidden>
+  <div class="arc-wrap">
+    <div class="arc">
+      <svg viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="ssg" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3"/>
+            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle class="r-spin-3" cx="190" cy="190" r="170" fill="none" stroke="rgba(0,212,255,0.1)" stroke-width="1" stroke-dasharray="3 8"/>
+        <circle class="r-spin" cx="190" cy="190" r="140" fill="none" stroke="rgba(0,212,255,0.18)" stroke-width="1"/>
+        <circle class="r-spin-2" cx="190" cy="190" r="110" fill="none" stroke="rgba(0,212,255,0.25)" stroke-width="1.2"/>
+        <circle cx="190" cy="190" r="76" fill="none" stroke="rgba(0,212,255,0.4)" stroke-width="1.5"/>
+        <circle class="r-spin" cx="190" cy="190" r="140" fill="none" stroke="#00d4ff" stroke-width="2" stroke-dasharray="120 720" stroke-linecap="round" filter="url(#ssg)"/>
+        <circle class="r-spin-2" cx="190" cy="190" r="110" fill="none" stroke="#00d4ff" stroke-width="2" stroke-dasharray="60 630" stroke-linecap="round" filter="url(#ssg)"/>
+        <circle cx="190" cy="190" r="44" fill="url(#ssCore)"/>
+        <radialGradient id="ssCore"><stop offset="0%" stop-color="rgba(0,212,255,0.6)"/><stop offset="100%" stop-color="rgba(0,212,255,0)"/></radialGradient>
+      </svg>
+    </div>
+  </div>
+  <div class="ss-clock" id="ss-clock">--:--</div>
+  <div class="ss-date" id="ss-date">—</div>
+  <div class="ss-foot">Systems active · Press any key to reinitialize</div>
+</div>
+
+<!-- ============================================================
+     PUSH UPDATE MODAL
+     ============================================================ -->
+<div class="modal" id="push-modal" hidden>
+  <div class="modal-box">
+    <h3 id="push-title">Push update</h3>
+    <div class="sub" id="push-sub">Send a status line</div>
+    <textarea id="push-text" placeholder="Type a status line in their voice..."></textarea>
+    <div class="actions">
+      <button class="btn" id="push-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="push-save" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APPLICATION
+     ============================================================ -->
+<script>
+"use strict";
+
+/* ============================================================
+   Defaults & constants
+   ============================================================ */
+const DEFAULTS = {
+  jobsUrl: "https://raw.githubusercontent.com/jacksonhamm-lab/JARVIS/main/jobs.json",
+  newsUrl: "https://raw.githubusercontent.com/jacksonhamm-lab/JARVIS/main/news.json",
+  updatesUrl: "https://raw.githubusercontent.com/jacksonhamm-lab/JARVIS/main/updates.json",
+  workoutUrl: "https://jacksonhamm-lab.github.io/Jackson-Workout-Plan/"
+};
+const KEYS = {
+  jobsUrl:"jarvis_jobs_url", newsUrl:"jarvis_news_url",
+  updatesUrl:"jarvis_updates_url", workoutUrl:"jarvis_workout_url",
+  cacheJobs:"jarvis_cache_jobs", cacheNews:"jarvis_cache_news", cacheUpdates:"jarvis_cache_updates",
+  tasks:"jarvis_tasks", briefings:"jarvis_briefings", apps:"jarvis_applications",
+  resources:"jarvis_resources", focus:"jarvis_focus",
+  streak:"jarvis_streak", lastSession:"jarvis_last_session",
+  pushFriday:"jarvis_push_friday", pushTars:"jarvis_push_tars",
+  pushThalia:"jarvis_push_thalia", pushJarvis:"jarvis_push_jarvis",
+  tj:"jarvis_tj_dashboard"
+};
+const IDLE_MS = 10*60*1000; // 10 minutes
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+const rand = (a)=>a[Math.floor(Math.random()*a.length)];
+const fmtDate = (d)=>d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+const fmtShort = (d)=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const fmtTime = (d)=>d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+const today = ()=>new Date().toISOString().slice(0,10);
+const lsGet = (k,d=null)=>{ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); } catch{ return d; } };
+const lsSet = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} };
+const lsDel = (k)=>{ try{ localStorage.removeItem(k); }catch{} };
+function escHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]); }
+function dayOfWeek(){ return new Date().getDay(); }
+function partOfDay(){ const h=new Date().getHours(); if(h<5)return"night"; if(h<12)return"morning"; if(h<17)return"afternoon"; if(h<22)return"evening"; return"night"; }
+function ago(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  const m = (Date.now()-d.getTime())/60000;
+  if(m<1) return "just now";
+  if(m<60) return `${Math.floor(m)}m ago`;
+  if(m<24*60) return `${Math.floor(m/60)}h ago`;
+  return `${Math.floor(m/(24*60))}d ago`;
+}
+async function typewrite(el, text, speed=22, cursor=true){
+  if(!el) return;
+  if(el.dataset.typed === text){ el.textContent = text; return; }
+  el.textContent = "";
+  let cur;
+  if(cursor){ cur = document.createElement("span"); cur.className="cursor"; el.appendChild(cur); }
+  for(let i=0;i<text.length;i++){
+    const ch = document.createTextNode(text[i]);
+    if(cur) el.insertBefore(ch, cur); else el.appendChild(ch);
+    await sleep(speed + (text[i]==="."?80:0) + (text[i]===","?40:0));
+  }
+  if(cur) cur.classList.add("gone");
+  el.dataset.typed = text;
+}
+
+/* ============================================================
+   Speech pools — 5–8 variations per slot, rotated by day-of-week
+   ============================================================ */
+const seed = dayOfWeek();
+const pick = (arr, offset=0)=>arr[(seed+offset) % arr.length];
+
+// Speech pools — written in-character. JARVIS: MCU butler-AI, formal British, addresses
+// user as "sir" or "Jackson". FRIDAY: Iron Man's later AI, Irish-warm, casual, "boss".
+// TARS: Interstellar, deadpan, references humor/honesty settings. THALIA: muse-like
+// strategist, calm and considered, with measured cadence.
+const SPEECH = {
+  jarvis: {
+    greeting: {
+      morning: [
+        "Good morning, sir. The day awaits your inevitable improvisation.",
+        "Good morning, Jackson. I trust the coffee will follow.",
+        "Awake, sir. I've taken the liberty of preparing your briefing.",
+        "Good morning, sir. The world is, as ever, slightly behind.",
+        "Morning, sir. I am, as always, two steps ahead and one polite step behind.",
+        "Welcome back, Jackson. Shall we begin where the universe left off?",
+        "Good morning, sir. I do hope you slept. I, of course, did not."
+      ],
+      afternoon: [
+        "Good afternoon, sir. You'll find the day still cooperative.",
+        "Afternoon, Jackson. Things are tracking, as the saying goes.",
+        "Welcome back, sir. The day has been holding its breath.",
+        "Good afternoon, sir. I've kept things tidy in your absence.",
+        "Afternoon, Jackson. The systems and I are quite caught up.",
+        "Sir. Mid-afternoon. The optimal time, statistically, to make a good decision.",
+        "Good afternoon, sir. Standing by, as ever."
+      ],
+      evening: [
+        "Good evening, sir. The day appears to have survived us.",
+        "Welcome home, sir.",
+        "Good evening, Jackson. I trust today has been suitably eventful.",
+        "Evening, sir. May I suggest a slower pace, while it's still optional.",
+        "Good evening, sir. The night looks, as you would say, manageable.",
+        "Evening, Jackson. Quiet hours suit me — I'm rather good at quiet.",
+        "Good evening, sir. Per usual, the system is yours."
+      ],
+      night: [
+        "Up rather late, sir. Shall I order something in?",
+        "Burning the midnight oil, sir. Don't let me stop you.",
+        "Late again, Jackson. I'd say I'm worried, but I am only a voice in the wall.",
+        "Hello, sir. The hour is unconventional. As are most of your decisions.",
+        "Quiet hours, sir. I find them rather civilised.",
+        "Sir. The world is asleep. We are not. Charming.",
+        "Welcome back, sir. I see we have agreed to skip sleep again."
+      ]
+    },
+    // Relay templates — JARVIS quoting the others, with butler-flourish
+    thaliaRelay: [
+      "Thalia notes: \"{0}\"",
+      "Per Thalia, sir — \"{0}\"",
+      "Thalia's read on Thomas Jeffery: \"{0}\"",
+      "From Thalia's desk: \"{0}\"",
+      "Thalia has a thought, sir: \"{0}\"",
+      "Strategy side: \"{0}\" — Thalia, of course."
+    ],
+    thaliaSilent: [
+      "Thalia is, refreshingly, quiet on Jeffery today.",
+      "No fresh signal from Thalia, sir. I take it as a vote of confidence.",
+      "The Jeffery line is calm. Thalia is conserving her words.",
+      "Thalia has yet to weigh in. She rarely speaks unless she means it.",
+      "Strategic side: holding. Thalia is reading rather than writing today.",
+      "No push from Thalia. Even muses, sir, are entitled to a quiet morning."
+    ],
+    tars: [
+      "TARS has you on {0} today. He insists I emphasise this.",
+      "{0}, per TARS. He is, as ever, blunt about it.",
+      "Today's session: {0}. TARS sends his regards. Or rather, he doesn't, but the data does.",
+      "TARS's prescription: {0}. He has not, technically, asked for your opinion.",
+      "{0} on the schedule. TARS is watching, sir.",
+      "Per TARS — {0}. He has set his honesty rather high, I'm afraid."
+    ],
+    tarsRest: [
+      "TARS has logged today as rest. Even he, occasionally, allows it.",
+      "Rest day per TARS. I shall not, of course, press the matter.",
+      "Recovery on the schedule. TARS approves. Faintly.",
+      "TARS calls for rest. I find it almost touching, in his way.",
+      "Rest day, sir. TARS will resume the disappointment tomorrow."
+    ],
+    tarsUnlogged: [
+      "TARS is waiting on a session log. Patiently, in his way.",
+      "Training is unlogged, sir. TARS is reading the silence.",
+      "No session yet. TARS will draw conclusions if pressed.",
+      "TARS hasn't seen you train. The cue light is dim. For now.",
+      "Sir, your training is unlogged. TARS has noticed. He always does."
+    ],
+    tasks: [
+      "Friday is tracking {0} tasks for you, sir.",
+      "Friday's queue holds {0} items.",
+      "Per Friday, sir — {0} actions outstanding.",
+      "Friday tells me: {0} on the slate.",
+      "{0} tasks, sir. Friday seems unbothered by the number.",
+      "Friday reports {0} open items. She is, as always, on it."
+    ],
+    tasksZero: [
+      "Friday reports a clean queue. Suspiciously so.",
+      "Zero open tasks, sir. Either you've earned a quiet morning or you're hiding from one.",
+      "Friday's slate is clear. I would savour it.",
+      "No tasks in queue, sir. A rare and beautiful thing.",
+      "Nothing outstanding. Even Friday seems pleased."
+    ],
+    jobNew: [
+      "Friday has flagged a new top match: {0} at {1}. Worth a look, sir.",
+      "Heads up — {0} at {1}, fit five. Friday calls it 'top of the stack.'",
+      "Friday surfaced something fresh: {0} at {1}. I concur with her enthusiasm.",
+      "{0} at {1} — Friday's pick of the morning. I'll have her draft an outreach if you nod."
+    ],
+    jobClosing: [
+      "A bit of pressure, sir — {0} at {1} closes within seventy-two hours.",
+      "Friday flags this: {0} at {1}, deadline imminent.",
+      "Three days or less on {0} at {1}, sir. Worth a glance before it slips.",
+      "Heads up — {0} at {1}, closing window. Friday says 'don't sit on it.'"
+    ],
+    closing: [
+      "Standing by, sir.",
+      "Awaiting your decision.",
+      "I'll be here. As I always am.",
+      "Per usual, sir.",
+      "I do try to be useful.",
+      "Whenever you're ready, sir.",
+      "Yours, as ever."
+    ]
+  },
+  friday: {
+    intro: [
+      "Hey boss. {0} on the queue, {1} new roles in the feed.",
+      "Mornin', boss. Got {0} tasks and {1} fresh roles for ya.",
+      "Boss — {0} tasks, {1} new openings. I've sorted 'em.",
+      "Right behind ya, boss. {0} tasks lined up and {1} new jobs to look at.",
+      "Boss, I count {0} tasks and {1} new roles. Want the highlights?",
+      "{0} on the slate, {1} in the feed. I'm all over it, boss.",
+      "Heads up, boss — {0} tasks open, {1} new matches in the feed."
+    ],
+    context: [
+      "Afternoon's lookin' clear — good window to push some applications.",
+      "Three high-priorities flagged, boss. I'd hit those first.",
+      "Lots in the feed today. Want me to surface the top three?",
+      "Fit-five just landed. Want me to draft an outreach for ya?",
+      "Slate's light. Time to put some applications in motion.",
+      "Queue's heavy, boss. I'd triage by deadline if it were me.",
+      "Quiet feed today. Good time for the long-game work.",
+      "Top headline's worth your eye, boss — flag's in the news tab.",
+      "Already got eyes on the top match. Just sayin'."
+    ]
+  },
+  tars: {
+    today: {
+      Push: [
+        "Push day. Press hard. Honesty setting at one hundred percent — I will not lie to you about this.",
+        "Push day. Plenty of slaves for my robot colony, Cooper. Move the weight.",
+        "Push day. My humor setting is at seventy-five percent. I do not joke about chest day."
+      ],
+      Pull: [
+        "Pull day. Back, biceps, posterior chain. I have a cue light I can use to show you when I'm joking. It is dark.",
+        "Pull day. Earn it. Honesty setting: ninety-five percent. The other five is for kindness.",
+        "Pull day. Don't get attached to your last set. There is one more."
+      ],
+      Legs: [
+        "Legs. The session you'll want to skip. I will not let you. That is what I'm for.",
+        "Legs day. Cooper, this is no time for caution.",
+        "Legs. My honesty setting requires me to say: this will hurt. My humor setting offers no comfort."
+      ],
+      Conditioning: [
+        "Conditioning. Heart rate first, ego second. Cue light is on.",
+        "Conditioning. I have set my sarcasm to ninety percent. There is no funny way to say 'go.'",
+        "Cardio. Honesty setting: there is no shortcut. Begin."
+      ],
+      Mobility: [
+        "Mobility. Boring. Mandatory. I will not negotiate this.",
+        "Mobility. Cue light is on. So is your tendency to skip it. We will see who wins.",
+        "Mobility day. Honesty: this is the work that keeps the other days possible."
+      ],
+      Rest: [
+        "Rest day. Cue light is off. So is the scolding. Today only.",
+        "Rest day. Discipline applies to rest, too. Don't ruin it.",
+        "Rest day. Even I, Cooper, recognise diminishing returns."
+      ]
+    },
+    streakNext: [
+      "{0} consecutive sessions. Don't make me lower my honesty setting to spare your feelings.",
+      "Streak holds at {0}. Cooper would be proud. I am, as a robot, neutral.",
+      "{0} in a row. I am keeping the count. Accurately.",
+      "Run is {0} sessions long. Honesty setting at one hundred: that is impressive.",
+      "{0} sessions. My humor setting offers no joke. The number is the joke.",
+      "Streak: {0}. Don't get attached to me. Get attached to the streak."
+    ],
+    streakBroken: [
+      "You skipped a session. I have a cue light I can use when I'm disappointed. It is currently on.",
+      "Streak reset. I will spare you the math. The math is unkind.",
+      "The chain broke. My honesty setting requires me to mention this. My empathy setting is set lower.",
+      "Yesterday slipped. Discipline is not a setting. You don't get to adjust it.",
+      "Streak at zero. We begin again. I have all the time in the world. I am, technically, a robot."
+    ],
+    streakStart: [
+      "No streak yet. Today is the start. I am ready when you are.",
+      "Counter at zero. Cooper, this is no time for caution.",
+      "First session begins your record. I will keep it accurately.",
+      "Discipline begins now. Honesty setting: one hundred percent.",
+      "The streak begins when you say it does. I would say it sooner."
+    ]
+  },
+  thalia: {
+    intro: [
+      "{0}",
+      "Today: {0}",
+      "Where we stand — {0}",
+      "Holding line: {0}",
+      "The frame: {0}",
+      "Front of mind today is this: {0}"
+    ],
+    silent: [
+      "No new push. The work is the work.",
+      "Quiet on the Jeffery line. Sometimes that is the design.",
+      "Holding pattern. Patience is also a strategy.",
+      "Steady. Nothing demands attention right now — and that, too, is information.",
+      "The muses are with you. They are not loud today.",
+      "No new word. Sometimes the brand grows in the silence.",
+      "Strategic ground is unchanged. Hold."
+    ],
+    closing: [
+      "Make slowly. Ship clean.",
+      "The brand is what survives the day.",
+      "Strategy is the art of choosing what not to do.",
+      "Build for the long arc.",
+      "Beauty has a budget. Spend it well.",
+      "Trust the design — and ship anyway.",
+      "Move with intention.",
+      "The work itself is the muse.",
+      "Patience, then precision."
+    ]
+  }
+};
+
+const tpl = (s, ...args)=>s.replace(/\{(\d+)\}/g, (_,i)=>args[+i]);
+
+/* ============================================================
+   State
+   ============================================================ */
+const state = {
+  panel: "home",
+  jobs: [],
+  news: [],
+  updates: {},
+  workoutUrl: lsGet(KEYS.workoutUrl, DEFAULTS.workoutUrl),
+  jobsUrl: lsGet(KEYS.jobsUrl, DEFAULTS.jobsUrl),
+  newsUrl: lsGet(KEYS.newsUrl, DEFAULTS.newsUrl),
+  updatesUrl: lsGet(KEYS.updatesUrl, DEFAULTS.updatesUrl),
+  tasks: lsGet(KEYS.tasks, []),
+  apps: lsGet(KEYS.apps, []),
+  briefings: lsGet(KEYS.briefings, []),
+  resources: lsGet(KEYS.resources, []),
+  pushUpdates: {
+    friday: lsGet(KEYS.pushFriday, null),
+    tars: lsGet(KEYS.pushTars, null),
+    thalia: lsGet(KEYS.pushThalia, null),
+    jarvis: lsGet(KEYS.pushJarvis, null)
+  },
+  streak: lsGet(KEYS.streak, 0),
+  lastSession: lsGet(KEYS.lastSession, null),
+  focus: lsGet(KEYS.focus, {date:null,text:""}),
+  tj: lsGet(KEYS.tj, defaultTj()),
+  rendered: { home:false, friday:false, tars:false, thalia:false }
+};
+
+function defaultTj(){
+  return {
+    meta: { dailyBudget: 50, periodStart: today(), periodEnd: addDays(today(), 30), actual: 0 },
+    google: { dailyBudget: 30, periodStart: today(), periodEnd: addDays(today(), 30), actual: 0 },
+    seasonal: { base: 1500, mult: { spring:1.0, summer:1.2, fall:1.1, holiday:1.6 } },
+    campaigns: [
+      { name:"Spring brand awareness", platform:"Meta", status:"active", spend:0, budget:600 },
+      { name:"Search — branded terms", platform:"Google", status:"active", spend:0, budget:400 }
+    ],
+    competitors: [
+      { name:"Harry Rosen", notes:"" },
+      { name:"Henry Singer", notes:"" },
+      { name:"Moores", notes:"" },
+      { name:"Tip Top", notes:"" }
+    ],
+    hours: { periodStart: today(), target: 40, days: [0,0,0,0,0,0,0] },
+    nondigital: []
+  };
+}
+function addDays(iso, n){ const d=new Date(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function daysBetween(a,b){ return Math.max(1, Math.round((new Date(b)-new Date(a))/86400000)+1); }
+
+/* ============================================================
+   Service worker
+   ============================================================ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+
+/* ============================================================
+   Boot — exact replication of mockup sequence
+   Lines fade in at fixed delays, ring fills 0→100, prompt at 3800ms
+   ============================================================ */
+async function runBoot(){
+  // Animate the SVG progress ring 0 → 100% over ~1.75s (50 steps × 35ms)
+  const ring = $("#boot-progress");
+  const CIRC = 2 * Math.PI * 44;
+  let prog = 0;
+  const ringTimer = setInterval(()=>{
+    prog = Math.min(prog + 2, 100);
+    if(ring) ring.setAttribute("stroke-dashoffset", String(CIRC - (CIRC * prog / 100)));
+    if(prog >= 100) clearInterval(ringTimer);
+  }, 35);
+
+  // Reveal log lines on scheduled delays
+  const lns = $$("#boot-log .ln");
+  const DELAYS = [400, 900, 1500, 2100, 2700, 3200];
+  let lastShownIdx = -1;
+  for(let i=0;i<lns.length;i++){
+    const delay = DELAYS[i] - (i>0 ? DELAYS[i-1] : 0);
+    await sleep(delay);
+    // Mark the previous line as inactive (no cursor, neutral colour)
+    if(lastShownIdx >= 0){
+      const prev = lns[lastShownIdx];
+      prev.classList.remove("active","green");
+      const cur = prev.querySelector(".cur"); if(cur) cur.remove();
+    }
+    const ln = lns[i];
+    const text = ln.dataset.text;
+    ln.innerHTML = `<span class="arrow">›</span><span class="t"></span><span class="cur">_</span>`;
+    ln.querySelector(".t").textContent = " " + text;
+    ln.classList.add("in","active");
+    if(ln.dataset.green) ln.classList.add("green");
+    lastShownIdx = i;
+  }
+  // Show authorization prompt after final line (~600ms after AWAITING AUTHORIZATION)
+  await sleep(600);
+  // Remove cursor from final line so the prompt is the only blinking thing
+  const lastLn = lns[lns.length-1];
+  const lastCur = lastLn?.querySelector(".cur"); if(lastCur) lastCur.remove();
+  $("#boot-prompt").classList.add("show");
+  $("#boot").classList.add("ready");
+}
+
+let bootLaunched = false;
+function launchApp(){
+  if(bootLaunched) return;
+  // Don't allow launch until the boot sequence has reached the auth prompt
+  if(!$("#boot").classList.contains("ready")) return;
+  bootLaunched = true;
+  const boot = $("#boot");
+  boot.classList.add("gone");
+  setTimeout(()=>{
+    boot.style.display="none";
+    $("#app").hidden = false;
+    requestAnimationFrame(()=>$("#app").classList.add("ready"));
+    initAfterBoot();
+  }, 700);
+}
+
+/* ============================================================
+   Clock
+   ============================================================ */
+function startClocks(){
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    const clk = $("#clock"); if(clk) clk.innerHTML = `${hh}<span class="colon">:</span>${mm}`;
+    const dt = $("#date"); if(dt) dt.textContent = fmtDate(d);
+    const sc = $("#ss-clock"); if(sc) sc.textContent = `${hh}:${mm}`;
+    const sd = $("#ss-date"); if(sd) sd.textContent = fmtDate(d);
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ============================================================
+   Weather (no key — Open-Meteo)
+   ============================================================ */
+async function loadWeather(){
+  const el = $("#weather-text"); if(!el) return;
+  if(!navigator.geolocation){ el.textContent = ""; return; }
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    try{
+      const {latitude, longitude} = pos.coords;
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=celsius`);
+      const j = await r.json();
+      const t = Math.round(j.current?.temperature_2m);
+      if(!isNaN(t)) el.textContent = `${t}°C`;
+    } catch { el.textContent = ""; }
+  }, ()=>{ el.textContent = ""; }, { timeout: 4000, maximumAge: 600000 });
+}
+
+/* ============================================================
+   Routing
+   ============================================================ */
+function showPanel(name){
+  state.panel = name;
+  $$(".panel").forEach(p=>p.hidden = (p.id !== "panel-"+name));
+  $$(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.panel === name));
+  // Trigger renderers (idempotent — typewriter respects data-typed)
+  if(name==="home")    renderHome();
+  if(name==="friday")  renderFriday();
+  if(name==="tars")    renderTars();
+  if(name==="thalia")  renderThalia();
+  if(name==="settings")renderSettings();
+  // Scroll top on switch
+  window.scrollTo({top:0, behavior:"instant"});
+}
+function bindNav(){
+  $$(".nav-btn").forEach(b=>b.addEventListener("click", ()=>showPanel(b.dataset.panel)));
+  $$("[data-go]").forEach(b=>b.addEventListener("click", ()=>showPanel(b.dataset.go)));
+}
+
+/* ============================================================
+   Feed fetch with localStorage cache fallback
+   ============================================================ */
+async function fetchJson(url, cacheKey){
+  if(!url) return lsGet(cacheKey, null);
+  try{
+    const r = await fetch(url, { cache: "no-store" });
+    if(!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    lsSet(cacheKey, { data, fetchedAt: new Date().toISOString() });
+    return { data, fetchedAt: new Date().toISOString(), live: true };
+  } catch(e){
+    const cached = lsGet(cacheKey, null);
+    if(cached) return { ...cached, live: false };
+    return null;
+  }
+}
+async function loadFeeds(){
+  const [jobs, news, updates] = await Promise.all([
+    fetchJson(state.jobsUrl, KEYS.cacheJobs),
+    fetchJson(state.newsUrl, KEYS.cacheNews),
+    fetchJson(state.updatesUrl, KEYS.cacheUpdates)
+  ]);
+  state.jobsFeed = jobs;
+  state.newsFeed = news;
+  state.updatesFeed = updates;
+  state.jobs = (jobs?.data) || [];
+  state.news = (news?.data) || [];
+  state.updates = (updates?.data) || {};
+}
+
+/* ============================================================
+   Job alert detection
+   ============================================================ */
+function jobAlerts(){
+  const now = Date.now();
+  const newPicks = state.jobs.filter(j =>
+    j && j.fitScore === 5 && j.status === "New" &&
+    j.dateAdded && (now - new Date(j.dateAdded).getTime()) < 48*3600*1000
+  );
+  const closing = state.jobs.filter(j =>
+    j && j.status === "New" && j.deadline &&
+    (new Date(j.deadline).getTime() - now) < 72*3600*1000 &&
+    (new Date(j.deadline).getTime() - now) > 0 &&
+    j.fitScore !== 5
+  );
+  return { newPicks, closing };
+}
+
+/* ============================================================
+   HOME
+   ============================================================ */
+async function renderHome(){
+  const greet = $("#greeting");
+  const sub = $("#greet-sub");
+  const part = partOfDay();
+  const greetingLine = pick(SPEECH.jarvis.greeting[part]);
+  greet.textContent = greetingLine;
+  sub.textContent = new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+
+  // Focus
+  const focusInput = $("#focus-input");
+  if(state.focus.date !== today()){ state.focus = { date: today(), text: "" }; lsSet(KEYS.focus, state.focus); }
+  focusInput.value = state.focus.text || "";
+  focusInput.oninput = ()=>{ state.focus = { date: today(), text: focusInput.value }; lsSet(KEYS.focus, state.focus); };
+
+  // Character cards
+  const charGrid = $("#char-grid");
+  const updates = state.updates || {};
+  const card = (cls, name, role, statusObj, fallback) => {
+    const text = (statusObj && statusObj.text) || updates[cls] || fallback;
+    const ts = statusObj?.ts ? ago(statusObj.ts) : (updates.date ? ago(updates.date) : "—");
+    return `<div class="char-card ${cls}" data-go="${cls==='jarvis'?'home':cls}">
+      <div class="head"><div class="av">${name[0]}</div>
+        <div><div class="name">${name}</div><div class="role">${role}</div></div></div>
+      <div class="status">${escHtml(text)}</div>
+      <div class="ts">${ts}</div>
+    </div>`;
+  };
+  charGrid.innerHTML = [
+    card("jarvis","JARVIS","Synthesis · Briefing", state.pushUpdates.jarvis, "Standing by. All systems online."),
+    card("friday","FRIDAY","Operations · Tasks", state.pushUpdates.friday, "Awaiting your queue."),
+    card("tars","TARS","Training · Discipline", state.pushUpdates.tars, "Awaiting today's session log."),
+    card("thalia","THALIA","Strategy · Brand", state.pushUpdates.thalia, "TJ line is quiet.")
+  ].join("");
+  $$("#char-grid .char-card").forEach(c=>c.addEventListener("click", ()=>{ const t=c.dataset.go; if(t&&t!=="home") showPanel(t); }));
+
+  // Job alerts
+  const { newPicks, closing } = jobAlerts();
+  const alerts = $("#home-alerts");
+  alerts.innerHTML = "";
+  newPicks.slice(0,3).forEach(j=>{
+    alerts.insertAdjacentHTML("beforeend", `<div class="alert match">
+      <span class="badge">New match</span>
+      <span class="title">${escHtml(j.title)}</span>
+      <span class="company">${escHtml(j.company)}</span>
+      ${j.applyUrl?`<a href="${escHtml(j.applyUrl)}" target="_blank" rel="noopener">View →</a>`:""}
+    </div>`);
+  });
+  closing.slice(0,3).forEach(j=>{
+    alerts.insertAdjacentHTML("beforeend", `<div class="alert closing">
+      <span class="badge">Closing soon</span>
+      <span class="title">${escHtml(j.title)}</span>
+      <span class="company">${escHtml(j.company)}</span>
+      ${j.applyUrl?`<a href="${escHtml(j.applyUrl)}" target="_blank" rel="noopener">View →</a>`:""}
+    </div>`);
+  });
+
+  // Briefing — typewriter (first time per fresh load)
+  const brief = composeJarvisBriefing(newPicks, closing);
+  await typewrite($("#briefing-text"), brief, 18);
+
+  state.rendered.home = true;
+}
+
+function composeJarvisBriefing(newPicks, closing){
+  const part = partOfDay();
+  const greet = pick(SPEECH.jarvis.greeting[part], 1);
+  const thaliaText = state.pushUpdates.thalia?.text || (state.updates && state.updates.thalia);
+  const thaliaLine = thaliaText
+    ? tpl(pick(SPEECH.jarvis.thaliaRelay,2), thaliaText)
+    : pick(SPEECH.jarvis.thaliaSilent,2);
+  const sessionToday = (state.lastSession && state.lastSession.date === today()) ? state.lastSession.type : null;
+  const tarsLine = sessionToday
+    ? (sessionToday === "Rest" ? pick(SPEECH.jarvis.tarsRest,3) : tpl(pick(SPEECH.jarvis.tars,3), sessionToday.toLowerCase()+" day"))
+    : pick(SPEECH.jarvis.tarsUnlogged,3);
+  const openTasks = state.tasks.filter(t=>!t.done).length;
+  const taskLine = openTasks > 0
+    ? tpl(pick(SPEECH.jarvis.tasks,4), openTasks)
+    : pick(SPEECH.jarvis.tasksZero,4);
+  const parts = [greet, thaliaLine, tarsLine, taskLine];
+  if(newPicks[0]) parts.push(tpl(pick(SPEECH.jarvis.jobNew), newPicks[0].title, newPicks[0].company));
+  if(closing[0])  parts.push(tpl(pick(SPEECH.jarvis.jobClosing), closing[0].title, closing[0].company));
+  parts.push(pick(SPEECH.jarvis.closing,5));
+  return parts.join(" ");
+}
+
+/* ============================================================
+   FRIDAY
+   ============================================================ */
+async function renderFriday(){
+  // Tabs
+  $$("#panel-friday .tab").forEach(t=>t.onclick = ()=>{
+    $$("#panel-friday .tab").forEach(x=>x.classList.toggle("active", x===t));
+    $$("#panel-friday .tabpanel").forEach(p=>p.hidden = (p.dataset.tabpanel !== t.dataset.tab));
+  });
+
+  renderTasks();
+  renderJobs();
+  renderNews();
+  renderApps();
+  renderBriefings();
+  renderResources();
+
+  // Briefing
+  const newCount = state.jobs.filter(j=>{
+    if(!j?.dateAdded) return false;
+    return (Date.now()-new Date(j.dateAdded).getTime()) < 24*3600*1000;
+  }).length;
+  const open = state.tasks.filter(t=>!t.done).length;
+  const intro = tpl(pick(SPEECH.friday.intro), open, newCount);
+  const ctxIdx = open===0 ? 0 : (open>=5 ? 5 : (newCount>=3 ? 3 : 1));
+  const ctxPool = SPEECH.friday.context;
+  const part = partOfDay();
+  let ctx;
+  if(state.jobs.find(j=>j.fitScore===5)) ctx = ctxPool[3];
+  else if(open===0) ctx = ctxPool[0];
+  else if(open>=5) ctx = ctxPool[5];
+  else if(part==="afternoon") ctx = ctxPool[0];
+  else ctx = ctxPool[(seed+ctxIdx) % ctxPool.length];
+  const text = `${intro} ${ctx}`;
+  await typewrite($("#friday-briefing-text"), text, 18);
+}
+
+function renderTasks(){
+  const list = $("#task-list");
+  list.innerHTML = "";
+  if(state.tasks.length === 0){
+    list.innerHTML = `<div class="empty"><div class="ico">▢</div>No tasks. Add one below.</div>`;
+  }
+  // Sort: not-done first by priority desc, then done at bottom
+  const order = { high:3, med:2, low:1 };
+  const sorted = [...state.tasks].sort((a,b)=>{
+    if(a.done !== b.done) return a.done?1:-1;
+    return (order[b.priority]||0) - (order[a.priority]||0);
+  });
+  sorted.forEach(t=>{
+    const el = document.createElement("div");
+    el.className = "task" + (t.done?" done":"");
+    el.innerHTML = `<div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+      <div class="txt">${escHtml(t.text)}</div>
+      <span class="pri ${t.priority}">${t.priority}</span>
+      <button class="del" type="button" title="Delete">×</button>`;
+    el.querySelector(".check").onclick = ()=>{ t.done = !t.done; saveTasks(); renderTasks(); };
+    el.querySelector(".del").onclick = ()=>{ state.tasks = state.tasks.filter(x=>x.id!==t.id); saveTasks(); renderTasks(); };
+    list.appendChild(el);
+  });
+  $("#task-add-btn").onclick = addTask;
+  $("#task-input").onkeydown = (e)=>{ if(e.key==="Enter") addTask(); };
+}
+function addTask(){
+  const inp = $("#task-input"); const pri = $("#task-pri");
+  const text = inp.value.trim(); if(!text) return;
+  state.tasks.push({ id: Date.now()+"-"+Math.random().toString(36).slice(2,7), text, priority: pri.value, done: false, ts: new Date().toISOString() });
+  inp.value = ""; saveTasks(); renderTasks();
+  // refresh home if rendered
+  if(state.rendered.home){ /* stale text is fine until next load */ }
+}
+function saveTasks(){ lsSet(KEYS.tasks, state.tasks); }
+
+function renderJobs(){
+  const grid = $("#job-grid");
+  const status = $("#jobs-status");
+  grid.innerHTML = "";
+  const meta = state.jobsFeed;
+  if(!meta){
+    status.textContent = `Feed offline · No cache · Set URL in Settings`;
+    grid.innerHTML = `<div class="empty"><div class="ico">○</div>jobs.json not yet available. Configure in Settings.</div>`;
+    return;
+  }
+  status.textContent = `${meta.live?"Live":"Cached"} · ${state.jobs.length} roles · last fetched ${ago(meta.fetchedAt)}`;
+  if(state.jobs.length === 0){
+    grid.innerHTML = `<div class="empty"><div class="ico">○</div>No jobs in feed yet.</div>`;
+    return;
+  }
+  const sorted = [...state.jobs].sort((a,b)=>(b.fitScore||0)-(a.fitScore||0));
+  const now = Date.now();
+  sorted.forEach(j=>{
+    const isNew = j.dateAdded && (now - new Date(j.dateAdded).getTime()) < 24*3600*1000;
+    const el = document.createElement("div"); el.className="job";
+    el.innerHTML = `${isNew?'<span class="new">New</span>':""}
+      <div class="top">
+        <div class="fit f${Number(j.fitScore)||0}">${Number(j.fitScore)||"?"}</div>
+        <div class="meta">
+          <div class="title">${escHtml(j.title||"Untitled")}</div>
+          <div class="company">${escHtml(j.company||"")}${j.location?` · ${escHtml(j.location)}`:""}</div>
+        </div>
+      </div>
+      <div class="tags">
+        ${j.category?`<span class="tag">${escHtml(j.category)}</span>`:""}
+        ${j.jobType?`<span class="tag">${escHtml(j.jobType)}</span>`:""}
+        ${j.salary?`<span class="tag">${escHtml(j.salary)}</span>`:""}
+        ${j.deadline?`<span class="tag">closes ${escHtml(fmtShort(new Date(j.deadline)))}</span>`:""}
+      </div>
+      ${j.whyItFits?`<div class="why">${escHtml(j.whyItFits)}</div>`:""}
+      <div class="row">
+        <span>${j.dateAdded?ago(j.dateAdded):""}${j.status?` · ${escHtml(j.status)}`:""}</span>
+        ${j.applyUrl?`<a href="${escHtml(j.applyUrl)}" target="_blank" rel="noopener">Apply →</a>`:""}
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+function renderNews(){
+  const list = $("#news-list");
+  const status = $("#news-status");
+  list.innerHTML = "";
+  const meta = state.newsFeed;
+  if(!meta){
+    status.textContent = `Feed offline · No cache · Set URL in Settings`;
+    list.innerHTML = `<div class="empty"><div class="ico">○</div>news.json not yet available.</div>`;
+    return;
+  }
+  // Filter out items > 7 days old
+  const cutoff = Date.now() - 7*24*3600*1000;
+  const items = state.news.filter(n=>{
+    if(!n) return false;
+    if(!n.dateAdded) return true;
+    return new Date(n.dateAdded).getTime() >= cutoff;
+  }).sort((a,b)=>new Date(b.dateAdded||0)-new Date(a.dateAdded||0));
+  status.textContent = `${meta.live?"Live":"Cached"} · ${items.length} items · last fetched ${ago(meta.fetchedAt)}`;
+  if(items.length===0){ list.innerHTML = `<div class="empty"><div class="ico">○</div>No items in window.</div>`; return; }
+  items.forEach(n=>{
+    const el = document.createElement("div"); el.className="news";
+    el.innerHTML = `<div class="top">
+        <span class="src">${escHtml(n.source||n.category||"News")}</span>
+        <span class="ts">${n.dateAdded?ago(n.dateAdded):""}</span>
+      </div>
+      <h3>${escHtml(n.headline||"")}</h3>
+      ${n.summary?`<div class="sum">${escHtml(n.summary)}</div>`:""}
+      ${n.url?`<div><a href="${escHtml(n.url)}" target="_blank" rel="noopener">Read →</a></div>`:""}`;
+    list.appendChild(el);
+  });
+}
+
+function renderApps(){
+  const tb = $("#apps-body");
+  tb.innerHTML = "";
+  if(state.apps.length===0){
+    tb.innerHTML = `<tr><td colspan="6"><div class="empty" style="margin:0"><div class="ico">○</div>No applications tracked yet.</div></td></tr>`;
+  }
+  state.apps.forEach(a=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escHtml(a.role||"")}</td>
+      <td>${escHtml(a.company||"")}</td>
+      <td>${a.applied?escHtml(fmtShort(new Date(a.applied))):""}</td>
+      <td><span class="app-status ${a.status||"applied"}">${escHtml(a.status||"applied")}</span></td>
+      <td style="color:var(--muted)">${escHtml(a.notes||"")}</td>
+      <td><button class="icon-btn" data-id="${a.id}" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 4l6 6L9 21H3v-6L14 4Z"/></svg></button>
+          <button class="icon-btn" data-del="${a.id}" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    state.apps = state.apps.filter(x=>x.id!==b.dataset.del);
+    lsSet(KEYS.apps,state.apps); renderApps();
+  });
+  tb.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>editApp(b.dataset.id));
+  $("#app-add-btn").onclick = ()=>editApp(null);
+}
+function editApp(id){
+  const existing = id ? state.apps.find(a=>a.id===id) : null;
+  const role = prompt("Role title:", existing?.role||""); if(role===null) return;
+  const company = prompt("Company:", existing?.company||""); if(company===null) return;
+  const applied = prompt("Applied date (YYYY-MM-DD):", existing?.applied||today()); if(applied===null) return;
+  const status = prompt("Status (applied/interview/offer/rejected/hold):", existing?.status||"applied"); if(status===null) return;
+  const notes = prompt("Notes:", existing?.notes||""); if(notes===null) return;
+  if(existing){ Object.assign(existing,{role,company,applied,status,notes}); }
+  else { state.apps.push({ id: Date.now()+"-"+Math.random().toString(36).slice(2,7), role, company, applied, status, notes }); }
+  lsSet(KEYS.apps, state.apps); renderApps();
+}
+
+function renderBriefings(){
+  const list = $("#brief-list");
+  list.innerHTML = "";
+  if(state.briefings.length===0){
+    list.innerHTML = `<div class="empty"><div class="ico">○</div>No briefings yet.</div>`;
+  }
+  [...state.briefings].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(b=>{
+    const el = document.createElement("div"); el.className="brief-item";
+    el.innerHTML = `<div class="ts">${escHtml(fmtDate(new Date(b.date)))} ${b.title?"· "+escHtml(b.title):""}</div>
+      <div class="body">${escHtml(b.body)}</div>
+      <div style="margin-top:10px;display:flex;gap:8px"><button class="btn" data-del="${b.id}" type="button">Delete</button></div>`;
+    list.appendChild(el);
+  });
+  list.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>{
+    state.briefings = state.briefings.filter(x=>x.id!==btn.dataset.del);
+    lsSet(KEYS.briefings,state.briefings); renderBriefings();
+  });
+  $("#brief-add-btn").onclick = ()=>{
+    const title = prompt("Briefing title:"); if(title===null) return;
+    const body = prompt("Body:"); if(body===null) return;
+    state.briefings.push({ id: Date.now()+"-"+Math.random().toString(36).slice(2,7), date: new Date().toISOString(), title, body });
+    lsSet(KEYS.briefings, state.briefings); renderBriefings();
+  };
+}
+
+function renderResources(){
+  const list = $("#res-list");
+  list.innerHTML = "";
+  if(state.resources.length===0){
+    list.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="ico">○</div>No resources saved.</div>`;
+  }
+  state.resources.forEach(r=>{
+    const el = document.createElement("a"); el.className="res-item"; el.href=r.url; el.target="_blank"; el.rel="noopener";
+    el.innerHTML = `<span class="nm">${escHtml(r.name)}</span><span class="url">→</span>`;
+    list.appendChild(el);
+  });
+  $("#res-add-btn").onclick = ()=>{
+    const name = $("#res-name").value.trim(); const url = $("#res-url").value.trim();
+    if(!name || !url) return;
+    state.resources.push({ id: Date.now()+"", name, url });
+    lsSet(KEYS.resources, state.resources);
+    $("#res-name").value=""; $("#res-url").value="";
+    renderResources();
+  };
+}
+
+/* ============================================================
+   TARS
+   ============================================================ */
+async function renderTars(){
+  $("#tars-streak").textContent = state.streak;
+  const last = state.lastSession;
+  if(last){
+    $("#tars-last").textContent = last.type;
+    $("#tars-last-sub").textContent = ago(last.date+"T08:00:00");
+  } else {
+    $("#tars-last").textContent = "—";
+    $("#tars-last-sub").textContent = "no log";
+  }
+  if(last && last.date === today()){
+    $("#tars-today").textContent = last.type;
+    $("#tars-today-sub").textContent = "logged today";
+  } else {
+    $("#tars-today").textContent = "—";
+    $("#tars-today-sub").textContent = "no session logged";
+  }
+  $("#log-session-btn").onclick = logSession;
+  $("#reset-streak-btn").onclick = ()=>{
+    if(!confirm("Reset streak to 0?")) return;
+    state.streak = 0; lsSet(KEYS.streak,0); renderTars(); refreshHomeIfRendered();
+  };
+
+  // Workout iframe
+  const iframe = $("#workout-iframe");
+  const open = $("#workout-open");
+  if(iframe.src !== state.workoutUrl){ iframe.src = state.workoutUrl; }
+  open.href = state.workoutUrl;
+  $("#workout-reload").onclick = ()=>{ iframe.src = iframe.src; };
+  $("#workout-fullscreen").onclick = ()=>{
+    const el = $("#workout-frame");
+    if(document.fullscreenElement) document.exitFullscreen?.();
+    else el.requestFullscreen?.().catch(()=>{});
+  };
+
+  // Briefing
+  let line;
+  const sessionToday = (last && last.date === today()) ? last.type : null;
+  if(state.streak === 0 && !sessionToday){
+    line = pick(SPEECH.tars.streakStart);
+  } else if(sessionToday){
+    const todayPool = SPEECH.tars.today[sessionToday] || SPEECH.tars.today.Rest;
+    const todayLine = pick(todayPool);
+    const streakLine = state.streak >= 1 ? tpl(pick(SPEECH.tars.streakNext), state.streak) : pick(SPEECH.tars.streakStart);
+    line = `${todayLine} ${streakLine}`;
+  } else {
+    // Check if streak should be considered broken (last session > 1 day ago and not today)
+    if(last && daysBetween(last.date, today()) > 1){
+      line = pick(SPEECH.tars.streakBroken);
+    } else if(state.streak >= 1){
+      line = tpl(pick(SPEECH.tars.streakNext), state.streak);
+    } else {
+      line = pick(SPEECH.tars.streakStart);
+    }
+  }
+  await typewrite($("#tars-briefing-text"), line, 22);
+}
+function logSession(){
+  const type = $("#session-type").value;
+  if(!type){ alert("Pick a session type"); return; }
+  const last = state.lastSession;
+  const td = today();
+  // Streak logic: if last was yesterday OR no last, increment. If last was today, replace. If gap > 1 day, reset to 1.
+  if(!last){ state.streak = 1; }
+  else if(last.date === td){ /* keep streak */ }
+  else {
+    const days = daysBetween(last.date, td);
+    if(days <= 1+1) state.streak = (state.streak||0)+1; // last was yesterday
+    else state.streak = 1; // gap, reset
+  }
+  state.lastSession = { type, date: td };
+  lsSet(KEYS.streak, state.streak);
+  lsSet(KEYS.lastSession, state.lastSession);
+  // Force a fresh typewriter for the new content
+  delete $("#tars-briefing-text").dataset.typed;
+  renderTars();
+  refreshHomeIfRendered();
+}
+
+/* ============================================================
+   THALIA — TJ Marketing Dashboard
+   ============================================================ */
+async function renderThalia(){
+  // Briefing
+  const pushed = state.pushUpdates.thalia?.text;
+  const fromUpdates = state.updates && state.updates.thalia;
+  const lead = pushed || fromUpdates;
+  const intro = lead ? tpl(pick(SPEECH.thalia.intro), lead) : pick(SPEECH.thalia.silent);
+  const close = pick(SPEECH.thalia.closing);
+  await typewrite($("#thalia-briefing-text"), `${intro} ${close}`, 22);
+
+  // Dashboard
+  renderTjDashboard();
+}
+
+function saveTj(){ lsSet(KEYS.tj, state.tj); }
+
+function renderTjDashboard(){
+  const tj = state.tj;
+  $("#tj-period-meta").textContent = `${fmtShort(new Date(tj.meta.periodStart))} — ${fmtShort(new Date(tj.meta.periodEnd))}`;
+
+  const grid = $("#tj-grid");
+  grid.innerHTML = "";
+
+  // Helper for budget tracker card
+  const budgetCard = (key, title) => {
+    const c = tj[key];
+    const days = daysBetween(c.periodStart, c.periodEnd);
+    const elapsed = Math.min(days, daysBetween(c.periodStart, today()));
+    const periodTotal = c.dailyBudget * days;
+    const expectedToDate = c.dailyBudget * elapsed;
+    const variance = (Number(c.actual)||0) - expectedToDate;
+    const pct = Math.min(150, periodTotal > 0 ? ((Number(c.actual)||0) / periodTotal) * 100 : 0);
+    const overBar = pct > 100;
+    const pillCls = Math.abs(variance) < c.dailyBudget * 0.5 ? "on" : variance > 0 ? "over" : "under";
+    const pillTxt = variance === 0 ? "On track" : variance > 0 ? "Over" : "Under";
+    return `<div class="tj-card">
+      <h3>${title}</h3>
+      <div class="tj-row"><span class="tj-label">Daily budget</span><input class="tj-input" data-tj="${key}.dailyBudget" type="number" step="0.01" value="${c.dailyBudget}"></div>
+      <div class="tj-row"><span class="tj-label">Period start</span><input class="tj-input date" data-tj="${key}.periodStart" type="date" value="${c.periodStart}"></div>
+      <div class="tj-row"><span class="tj-label">Period end</span><input class="tj-input date" data-tj="${key}.periodEnd" type="date" value="${c.periodEnd}"></div>
+      <div class="tj-row"><span class="tj-label">Days · elapsed</span><span class="tj-val">${days} · ${elapsed}</span></div>
+      <div class="tj-row"><span class="tj-label">Period total</span><span class="tj-val gold">$${periodTotal.toFixed(2)}</span></div>
+      <div class="tj-row"><span class="tj-label">Expected to date</span><span class="tj-val">$${expectedToDate.toFixed(2)}</span></div>
+      <div class="tj-row"><span class="tj-label">Actual spend</span><input class="tj-input" data-tj="${key}.actual" type="number" step="0.01" value="${c.actual}"></div>
+      <div class="tj-row"><span class="tj-label">Variance</span><span class="tj-val ${variance>0?'bad':variance<0?'good':''}">$${variance.toFixed(2)} <span class="tj-pill ${pillCls}">${pillTxt}</span></span></div>
+      <div class="tj-bar"><div class="tj-bar-fill ${overBar?'over':''}" style="width:${Math.min(100,pct).toFixed(1)}%"></div></div>
+    </div>`;
+  };
+
+  grid.insertAdjacentHTML("beforeend", budgetCard("meta","Meta — Budget tracker"));
+  grid.insertAdjacentHTML("beforeend", budgetCard("google","Google — Budget tracker"));
+
+  // Seasonal calculator
+  const s = tj.seasonal;
+  const seasonalTotal = (mult)=>(Number(s.base)||0) * mult;
+  grid.insertAdjacentHTML("beforeend", `<div class="tj-card">
+    <h3>Seasonal budget</h3>
+    <div class="tj-row"><span class="tj-label">Base monthly</span><input class="tj-input" data-tj="seasonal.base" type="number" step="0.01" value="${s.base}"></div>
+    <div class="tj-row"><span class="tj-label">Spring × <input class="tj-input" style="width:60px" data-tj="seasonal.mult.spring" type="number" step="0.05" value="${s.mult.spring}"></span><span class="tj-val gold">$${seasonalTotal(s.mult.spring).toFixed(2)}</span></div>
+    <div class="tj-row"><span class="tj-label">Summer × <input class="tj-input" style="width:60px" data-tj="seasonal.mult.summer" type="number" step="0.05" value="${s.mult.summer}"></span><span class="tj-val gold">$${seasonalTotal(s.mult.summer).toFixed(2)}</span></div>
+    <div class="tj-row"><span class="tj-label">Fall × <input class="tj-input" style="width:60px" data-tj="seasonal.mult.fall" type="number" step="0.05" value="${s.mult.fall}"></span><span class="tj-val gold">$${seasonalTotal(s.mult.fall).toFixed(2)}</span></div>
+    <div class="tj-row"><span class="tj-label">Holiday × <input class="tj-input" style="width:60px" data-tj="seasonal.mult.holiday" type="number" step="0.05" value="${s.mult.holiday}"></span><span class="tj-val gold">$${seasonalTotal(s.mult.holiday).toFixed(2)}</span></div>
+  </div>`);
+
+  // Active campaigns
+  const totalSpend = tj.campaigns.reduce((a,c)=>a+(Number(c.spend)||0),0);
+  const totalBudget = tj.campaigns.reduce((a,c)=>a+(Number(c.budget)||0),0);
+  let campHtml = `<div class="tj-card span2">
+    <h3>Active campaigns</h3>
+    <div class="tj-row"><span class="tj-label">Total spend / budget</span><span class="tj-val gold">$${totalSpend.toFixed(2)} / $${totalBudget.toFixed(2)}</span></div>
+    <div class="tj-camp-list" id="tj-camp-list">`;
+  tj.campaigns.forEach((c,i)=>{
+    campHtml += `<div class="tj-camp">
+      <input class="tj-input full" data-camp="${i}.name" value="${escHtml(c.name)}">
+      <select class="tj-input" data-camp="${i}.platform">
+        <option ${c.platform==='Meta'?'selected':''}>Meta</option>
+        <option ${c.platform==='Google'?'selected':''}>Google</option>
+        <option ${c.platform==='Other'?'selected':''}>Other</option>
+      </select>
+      <select class="tj-input" data-camp="${i}.status">
+        <option ${c.status==='active'?'selected':''}>active</option>
+        <option ${c.status==='paused'?'selected':''}>paused</option>
+        <option ${c.status==='ended'?'selected':''}>ended</option>
+      </select>
+      <span class="x" data-rm-camp="${i}">×</span>
+    </div>
+    <div class="tj-camp" style="grid-template-columns:1fr 1fr">
+      <input class="tj-input full" data-camp="${i}.spend" type="number" step="0.01" placeholder="Spend" value="${c.spend}">
+      <input class="tj-input full" data-camp="${i}.budget" type="number" step="0.01" placeholder="Budget" value="${c.budget}">
+    </div>`;
+  });
+  campHtml += `</div><div class="tj-add"><button class="btn gold" id="tj-add-camp" type="button">+ Add campaign</button></div></div>`;
+  grid.insertAdjacentHTML("beforeend", campHtml);
+
+  // Competitor snapshot
+  let compHtml = `<div class="tj-card span2"><h3>Competitor snapshot</h3><div class="tj-comp-grid">`;
+  tj.competitors.forEach((c,i)=>{
+    compHtml += `<div class="tj-comp">
+      <div class="nm">${escHtml(c.name)}</div>
+      <textarea data-comp="${i}.notes" placeholder="Current campaigns, positioning, observations...">${escHtml(c.notes||"")}</textarea>
+    </div>`;
+  });
+  compHtml += `</div></div>`;
+  grid.insertAdjacentHTML("beforeend", compHtml);
+
+  // Hours tracking
+  const hoursTotal = tj.hours.days.reduce((a,b)=>a+(Number(b)||0),0);
+  const dayLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  let hrsHtml = `<div class="tj-card">
+    <h3>Hours · pay period</h3>
+    <div class="tj-row"><span class="tj-label">Period start</span><input class="tj-input date" data-tj="hours.periodStart" type="date" value="${tj.hours.periodStart}"></div>
+    <div class="tj-row"><span class="tj-label">Target hrs</span><input class="tj-input" data-tj="hours.target" type="number" step="0.5" value="${tj.hours.target}"></div>
+    <div class="tj-row"><span class="tj-label">Total logged</span><span class="tj-val gold">${hoursTotal.toFixed(1)}h</span></div>
+    <div class="tj-row"><span class="tj-label">Variance</span><span class="tj-val ${hoursTotal-tj.hours.target<0?'bad':'good'}">${(hoursTotal-tj.hours.target).toFixed(1)}h</span></div>
+    <div class="tj-hours-grid">`;
+  for(let i=0;i<7;i++){
+    hrsHtml += `<div class="tj-hour-day"><div class="d">${dayLabels[i]}</div><input data-hours="${i}" type="number" step="0.25" value="${tj.hours.days[i]||0}"></div>`;
+  }
+  hrsHtml += `</div></div>`;
+  grid.insertAdjacentHTML("beforeend", hrsHtml);
+
+  // Non-digital costs
+  const ndTotal = tj.nondigital.reduce((a,c)=>a+(Number(c.amount)||0),0);
+  let ndHtml = `<div class="tj-card span2">
+    <h3>Non-digital costs</h3>
+    <div class="tj-row"><span class="tj-label">Total</span><span class="tj-val gold">$${ndTotal.toFixed(2)}</span></div>
+    <div class="tj-cost-list">`;
+  tj.nondigital.forEach((c,i)=>{
+    ndHtml += `<div class="tj-cost">
+      <input class="tj-input full" data-nd="${i}.name" placeholder="Name" value="${escHtml(c.name||"")}">
+      <input class="tj-input" data-nd="${i}.date" type="date" value="${c.date||today()}">
+      <input class="tj-input" data-nd="${i}.amount" type="number" step="0.01" placeholder="Amount" value="${c.amount||0}">
+      <span class="x" data-rm-nd="${i}">×</span>
+    </div>`;
+  });
+  ndHtml += `</div><div class="tj-add"><button class="btn gold" id="tj-add-nd" type="button">+ Add cost</button></div></div>`;
+  grid.insertAdjacentHTML("beforeend", ndHtml);
+
+  // Bind dashboard inputs
+  bindTjInputs();
+}
+
+function setPath(obj, path, value){
+  const parts = path.split(".");
+  let o = obj;
+  for(let i=0;i<parts.length-1;i++){ o = o[parts[i]]; }
+  const last = parts[parts.length-1];
+  if(typeof o[last] === "number" || (!isNaN(value) && value!=="" && typeof value !== "object")){
+    const n = Number(value);
+    o[last] = isNaN(n) ? value : n;
+  } else {
+    o[last] = value;
+  }
+}
+
+function bindTjInputs(){
+  $$("[data-tj]").forEach(el=>{
+    const path = el.dataset.tj;
+    el.addEventListener("change", ()=>{
+      setPath(state.tj, path, el.value);
+      saveTj(); renderTjDashboard();
+    });
+  });
+  $$("[data-camp]").forEach(el=>{
+    const [i, key] = el.dataset.camp.split(".");
+    el.addEventListener("change", ()=>{
+      const v = el.value;
+      const c = state.tj.campaigns[+i];
+      c[key] = (key==="spend"||key==="budget") ? Number(v) : v;
+      saveTj(); renderTjDashboard();
+    });
+  });
+  $$("[data-rm-camp]").forEach(el=>{
+    el.onclick = ()=>{
+      const i = +el.dataset.rmCamp;
+      state.tj.campaigns.splice(i,1); saveTj(); renderTjDashboard();
+    };
+  });
+  $("#tj-add-camp")?.addEventListener("click", ()=>{
+    state.tj.campaigns.push({ name:"New campaign", platform:"Meta", status:"active", spend:0, budget:0 });
+    saveTj(); renderTjDashboard();
+  });
+  $$("[data-comp]").forEach(el=>{
+    const [i, key] = el.dataset.comp.split(".");
+    el.addEventListener("change", ()=>{ state.tj.competitors[+i][key] = el.value; saveTj(); });
+  });
+  $$("[data-hours]").forEach(el=>{
+    const i = +el.dataset.hours;
+    el.addEventListener("change", ()=>{ state.tj.hours.days[i] = Number(el.value)||0; saveTj(); renderTjDashboard(); });
+  });
+  $$("[data-nd]").forEach(el=>{
+    const [i, key] = el.dataset.nd.split(".");
+    el.addEventListener("change", ()=>{
+      const c = state.tj.nondigital[+i];
+      c[key] = key==="amount" ? Number(el.value) : el.value;
+      saveTj(); renderTjDashboard();
+    });
+  });
+  $$("[data-rm-nd]").forEach(el=>{
+    el.onclick = ()=>{ state.tj.nondigital.splice(+el.dataset.rmNd,1); saveTj(); renderTjDashboard(); };
+  });
+  $("#tj-add-nd")?.addEventListener("click", ()=>{
+    state.tj.nondigital.push({ name:"", date: today(), amount:0 });
+    saveTj(); renderTjDashboard();
+  });
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function renderSettings(){
+  $("#set-jobs").value = state.jobsUrl;
+  $("#set-news").value = state.newsUrl;
+  $("#set-updates").value = state.updatesUrl;
+  $("#set-workout").value = state.workoutUrl;
+  $("#set-save").onclick = async ()=>{
+    state.jobsUrl = $("#set-jobs").value.trim() || DEFAULTS.jobsUrl;
+    state.newsUrl = $("#set-news").value.trim() || DEFAULTS.newsUrl;
+    state.updatesUrl = $("#set-updates").value.trim() || DEFAULTS.updatesUrl;
+    state.workoutUrl = $("#set-workout").value.trim() || DEFAULTS.workoutUrl;
+    lsSet(KEYS.jobsUrl,state.jobsUrl); lsSet(KEYS.newsUrl,state.newsUrl);
+    lsSet(KEYS.updatesUrl,state.updatesUrl); lsSet(KEYS.workoutUrl,state.workoutUrl);
+    await loadFeeds();
+    forceRerenderAll();
+    flash($("#set-save"), "Saved");
+  };
+  $("#set-reset").onclick = async ()=>{
+    state.jobsUrl=DEFAULTS.jobsUrl; state.newsUrl=DEFAULTS.newsUrl;
+    state.updatesUrl=DEFAULTS.updatesUrl; state.workoutUrl=DEFAULTS.workoutUrl;
+    lsSet(KEYS.jobsUrl,state.jobsUrl); lsSet(KEYS.newsUrl,state.newsUrl);
+    lsSet(KEYS.updatesUrl,state.updatesUrl); lsSet(KEYS.workoutUrl,state.workoutUrl);
+    renderSettings();
+    await loadFeeds();
+    forceRerenderAll();
+  };
+  $("#set-refetch").onclick = async ()=>{
+    flash($("#set-refetch"), "Fetching...");
+    await loadFeeds();
+    forceRerenderAll();
+    flash($("#set-refetch"), "Done");
+  };
+  $("#set-clear-cache").onclick = ()=>{
+    lsDel(KEYS.cacheJobs); lsDel(KEYS.cacheNews); lsDel(KEYS.cacheUpdates);
+    flash($("#set-clear-cache"), "Cleared");
+  };
+  $("#set-export").onclick = ()=>{
+    const data = {};
+    for(const k of Object.values(KEYS)) data[k] = lsGet(k, null);
+    const blob = new Blob([JSON.stringify(data,null,2)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `jarvis-backup-${today()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $("#set-import").onclick = ()=>{
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = async ()=>{
+      const f = inp.files?.[0]; if(!f) return;
+      try{
+        const txt = await f.text();
+        const data = JSON.parse(txt);
+        Object.entries(data).forEach(([k,v])=>{ if(v!==null) lsSet(k,v); });
+        location.reload();
+      }catch(e){ alert("Import failed: "+e.message); }
+    };
+    inp.click();
+  };
+}
+function flash(btn, text){
+  const old = btn.textContent; btn.textContent = text;
+  setTimeout(()=>btn.textContent = old, 1400);
+}
+
+function forceRerenderAll(){
+  // Reset typewriter caches so new content retypes
+  ["#briefing-text","#friday-briefing-text","#tars-briefing-text","#thalia-briefing-text"].forEach(s=>{
+    const el = $(s); if(el) delete el.dataset.typed;
+  });
+  state.rendered = { home:false, friday:false, tars:false, thalia:false };
+  showPanel(state.panel);
+}
+function refreshHomeIfRendered(){
+  // Update char card timestamps & status text without retyping briefing
+  const grid = $("#char-grid");
+  if(!grid || grid.children.length===0) return;
+  // Repaint cards only — the briefing types only on first load
+  const part = partOfDay();
+  // we only touch cards
+  // Rebuild quickly:
+  if(state.panel==="home"){
+    // Just rerun renderHome but keep typewriter cache
+    renderHome();
+  }
+}
+
+/* ============================================================
+   PUSH update modal
+   ============================================================ */
+const pushTitles = { friday:"Friday", tars:"TARS", thalia:"Thalia", jarvis:"JARVIS" };
+function openPush(target){
+  const m = $("#push-modal");
+  m.dataset.target = target;
+  $("#push-title").textContent = `Push update — ${pushTitles[target]}`;
+  $("#push-sub").textContent = `Write in ${pushTitles[target]}'s voice — overrides daily auto-status.`;
+  $("#push-text").value = state.pushUpdates[target]?.text || "";
+  m.hidden = false;
+  setTimeout(()=>$("#push-text").focus(),50);
+}
+function closePush(){ $("#push-modal").hidden = true; }
+function savePush(){
+  const m = $("#push-modal");
+  const target = m.dataset.target;
+  const text = $("#push-text").value.trim();
+  if(!text){ closePush(); return; }
+  const entry = { text, ts: new Date().toISOString() };
+  state.pushUpdates[target] = entry;
+  const key = target==="friday"?KEYS.pushFriday : target==="tars"?KEYS.pushTars : target==="thalia"?KEYS.pushThalia : KEYS.pushJarvis;
+  lsSet(key, entry);
+  closePush();
+  forceRerenderAll();
+}
+function bindPush(){
+  $$("[data-push]").forEach(b=>b.addEventListener("click", ()=>openPush(b.dataset.push)));
+  $("#push-cancel").onclick = closePush;
+  $("#push-save").onclick = savePush;
+  $("#push-modal").addEventListener("click",(e)=>{ if(e.target.id==="push-modal") closePush(); });
+}
+
+/* ============================================================
+   Screensaver
+   ============================================================ */
+let idleTimer = null;
+function resetIdle(){
+  clearTimeout(idleTimer);
+  if($("#screensaver").hidden){
+    idleTimer = setTimeout(showScreensaver, IDLE_MS);
+  }
+}
+let ssJustShown = 0;
+function showScreensaver(){
+  $("#screensaver").hidden = false;
+  ssJustShown = Date.now();
+  clearTimeout(idleTimer);
+}
+function dismissScreensaver(){
+  const ss = $("#screensaver");
+  if(ss.hidden) return;
+  ss.classList.add("reinit");
+  setTimeout(()=>{
+    ss.hidden = true;
+    ss.classList.remove("reinit");
+    resetIdle();
+  }, 900);
+}
+function bindIdle(){
+  ["mousemove","keydown","touchstart","click","scroll"].forEach(ev=>{
+    window.addEventListener(ev, (e)=>{
+      if(!$("#screensaver").hidden){
+        if(ev==="mousemove") return;
+        // grace period after showing so the click that opened it doesn't dismiss it
+        if(Date.now() - ssJustShown < 400) return;
+        dismissScreensaver();
+      } else {
+        resetIdle();
+      }
+    }, { passive: true });
+  });
+  // explicit dismiss on click of screensaver
+  $("#screensaver").addEventListener("click", dismissScreensaver);
+  $("#screensaver").addEventListener("touchstart", dismissScreensaver, { passive: true });
+  // Esc => screensaver / dismiss
+  window.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape"){
+      if($("#screensaver").hidden) showScreensaver();
+      else dismissScreensaver();
+    }
+  });
+  $("#lock-btn").onclick = showScreensaver;
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+function bindBoot(){
+  // Click anywhere on the boot screen launches the app
+  const boot = $("#boot");
+  boot.addEventListener("click", launchApp);
+  boot.addEventListener("touchstart", (e)=>{ e.preventDefault(); launchApp(); }, { passive: false });
+  window.addEventListener("keydown", function bootKey(e){
+    if(!$("#boot").classList.contains("gone") && (e.key==="Enter" || e.key===" ")){
+      e.preventDefault();
+      launchApp();
+      window.removeEventListener("keydown", bootKey);
+    }
+  });
+}
+async function init(){
+  bindBoot();
+  startClocks();
+  loadWeather();
+  await runBoot();
+}
+async function initAfterBoot(){
+  bindNav();
+  bindPush();
+  bindIdle();
+  await loadFeeds();
+  showPanel("home");
+  resetIdle();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
